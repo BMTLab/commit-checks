@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-25
+
 ### Fixed
 
 - The hooks ran only under Python 3.14.
@@ -24,5 +26,6 @@ and this project adheres to [Semantic Versioning][semver].
 
 [keepachangelog]: https://keepachangelog.com/en/1.1.0/
 [semver]: https://semver.org/spec/v2.0.0.html
-[Unreleased]: https://github.com/BMTLab/commit-checks/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/BMTLab/commit-checks/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/BMTLab/commit-checks/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/BMTLab/commit-checks/releases/tag/v1.0.0

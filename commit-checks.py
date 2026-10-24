@@ -22,7 +22,7 @@ How it works:
   A check that also holds for the working tree, such as a linter or a test,
   belongs in make check instead, so it has no command here.
 
-Version: 1.0.0
+Version: 1.0.1
 """
 
 # Python 3.13 and older evaluate annotations when a def runs,
@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 # region Constants
 
 PROGRAM: Final = "commit-checks"
-VERSION: Final = "1.0.0"
+VERSION: Final = "1.0.1"
 
 CC_ERR_USAGE: Final = 10
 CC_ERR_TRAILERS: Final = 20
