@@ -1,8 +1,9 @@
 # commit-checks
 
 The checks of git hooks that only a commit can make:
-the trailers of its message, the references to the paths it moves,
-and the files it adds or leaves out.
+the trailers of its message,
+the references to the paths that it renames or deletes,
+and the files that it adds or leaves out.
 
 ## Features
 
@@ -30,14 +31,12 @@ commit-checks needs Python 3.14 and git.
 `make install` links the script into `~/.local/bin` as `commit-checks`,
 for a run by hand; the hooks need no install.
 
-A repository takes the hooks in its `.pre-commit-config.yaml`,
-pinned to a commit.
-The path of a local checkout works as `repo`, and so does a URL:
+A repository takes the hooks in its `.pre-commit-config.yaml`:
 
 ```yaml
 repos:
-  - repo: /path/to/commit-checks
-    rev: 0123456789abcdef0123456789abcdef01234567 # the commit to pin
+  - repo: https://github.com/BMTLab/commit-checks
+    rev: v1.0.0
     hooks:
       - id: trailers
       - id: references
@@ -47,6 +46,9 @@ repos:
 
 The config also needs `default_install_hook_types: [pre-commit, commit-msg]`,
 so that `pre-commit install` sets up the hook of the message too.
+`pre-commit autoupdate --freeze` moves `rev` to the newest tag
+and pins the commit of that tag, with the tag in a comment.
+The path of a local checkout works as `repo` too, pinned to a commit.
 
 ## Usage
 
