@@ -1,0 +1,116 @@
+# .pre-commit-config.yaml
+#
+# The git hooks of this repository, run by pre-commit (https://pre-commit.com).
+# `make hooks` installs them once per clone.
+#
+# The hooks check only what nothing but a commit can show:
+# what the commit adds to the history, read from the index, and its message.
+# The linters, the formatters and the tests run in `make check` and in CI,
+# on the whole working tree, so a commit stays fast.
+# On the message, committed checks the rules of committed.toml,
+# and the last hooks below add the rules committed lacks.
+#
+# A repository is pinned to a commit, with its version in a comment,
+# as `pre-commit autoupdate --freeze` writes it;
+# Dependabot moves both together, as it does for the actions.
+# The local hooks are patterns, which pre-commit matches itself.
+
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+minimum_pre_commit_version: '4.0.0'
+
+repos:
+  # What the commit adds: no large file, no two names that differ in case alone,
+  # no conflict marker and no private key.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  # The message: the rules of committed.toml.
+  # Without --fixup and --wip, the defaults of the hook,
+  # it refuses fixup and WIP commits too, since main takes only finished ones.
+  - repo: https://github.com/crate-ci/committed
+    rev: faeed42f2e10c244533a01525f13c4d8b6ce383f # frozen: v1.1.11
+    hooks:
+      - id: committed
+        args: [--commit-file]
+
+  # The checks of this repository, run from its own checkout.
+  - repo: local
+    hooks:
+      - id: trailers
+        name: git parses every trailer of the message
+        entry: ./commit-checks.py trailers
+        language: script
+        stages: [commit-msg]
+      - id: references
+        name: no file names a path that the commit moves or deletes
+        entry: ./commit-checks.py references
+        language: script
+        pass_filenames: false
+        always_run: true
+      - id: temporary-files
+        name: the commit adds no temporary file
+        entry: ./commit-checks.py temporary
+        language: script
+        pass_filenames: false
+        always_run: true
+      - id: untracked-files
+        name: the files that the commit leaves out
+        entry: ./commit-checks.py untracked
+        language: script
+        pass_filenames: false
+        always_run: true
+        verbose: true
+
+  - repo: local
+    hooks:
+      # The subject starts with a verb in the imperative mood:
+      # "Add", never "Added", "Adds" or "Adding".
+      # committed 1.1.11 has this rule, but looks the word up as written,
+      # in a lowercase word list, so a capitalized subject always passes it.
+      # Here the ending decides, except for verbs whose own ending looks alike.
+      - id: subject-in-imperative-mood
+        name: the subject starts in the imperative mood
+        entry: |-
+          (?x) \A
+          (?! (?: Bleed | Breed | Embed | Exceed | Feed | Need | Proceed
+                | Seed | Shed | Speed | Succeed
+                | Bring | Ping | Ring | Sing | Spring | String | Swing | Wing
+              ) \b )
+          [A-Za-z]+ (?: ed | ing | [^aisu\W]s ) \b
+        language: pygrep
+        args: [--multiline]
+        stages: [commit-msg]
+
+      # The subject fits in 72 characters, its last word included:
+      # committed lets that word run over, as it would in the body.
+      # The pattern counts characters as UTF-8 sequences, not bytes.
+      - id: subject-within-72-characters
+        name: a subject of at most 72 characters
+        entry: '\A(?:[\x00-\x09\x0b-\x7f]|[\xc0-\xff][\x80-\xbf]*){73}'
+        language: pygrep
+        args: [--multiline]
+        stages: [commit-msg]
+
+      # A blank line parts the subject from the body:
+      # git takes everything up to the first blank line as the subject.
+      - id: blank-line-after-subject
+        name: a blank line after the subject
+        entry: '\A[^#\n][^\n]*\n[^#\n]'
+        language: pygrep
+        args: [--multiline]
+        stages: [commit-msg]
+
+      # The em-dash (U+2014) stays out of messages as it stays out of files.
+      # pygrep matches bytes, so the pattern spells the dash in UTF-8;
+      # comment lines start with #, and git drops them.
+      - id: message-without-em-dash
+        name: no em-dash in the message
+        entry: '^(?!#).*\xe2\x80\x94'
+        language: pygrep
+        stages: [commit-msg]

@@ -1,0 +1,30 @@
+# committed.toml
+#
+# The rules of a commit message
+# (see "Versions, changelog and git" in CLAUDE.md),
+# which committed (https://github.com/crate-ci/committed) checks
+# in the commit-msg hook of .pre-commit-config.yaml.
+# Every rule is spelled out, even where it is the default of committed.
+
+# A subject of at most 72 columns (committed says 50),
+# and a body wrapped at 72, like the subject.
+# committed lets the last word of a line run over;
+# the hook subject-within-72-characters holds the subject to 72.
+subject_length = 72
+line_length = 72
+
+# The subject reads as an order, the way git writes its own:
+# "Fix the width of CJK names", not "fixed", "Fixes" or "Fixing ...".
+# committed 1.1.11 looks a capitalized first word up as written,
+# in a lowercase word list, so its imperative check never fails here;
+# the hook subject-in-imperative-mood in .pre-commit-config.yaml covers it.
+subject_capitalized = true
+imperative_subject = true
+subject_not_punctuated = true
+
+# Only finished work: no "WIP" and no "fixup!" commits on main.
+no_wip = true
+no_fixup = true
+
+# No Conventional Commits prefixes: the subject starts with its verb.
+style = "none"

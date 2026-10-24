@@ -1,0 +1,43 @@
+# .rumdl.toml
+#
+# The Markdown rules of the repository, read by rumdl (https://rumdl.dev)
+# in `make lint-md`, in the git hooks and in editors that know it.
+# Every rule of markdownlint applies under its number, with these settings:
+
+[global]
+# MD060 aligns tables and MD088 finds dashes; rumdl leaves both off.
+extend-enable = ["MD060", "MD088"]
+# MD088 would put a hyphen where the dash was;
+# the sentence takes a comma, a colon or a full stop instead.
+# rumdl fixes all of MD088 or none of it, so a curly quote is changed by hand too.
+unfixable = ["MD088"]
+# Every file takes milliseconds,
+# so a cache would only be one more folder in the repository.
+cache = false
+
+[MD013]
+# Prose breaks at phrase boundaries (CLAUDE.md, "Comments"),
+# with lines of at most 80 columns;
+# stern flags a longer line wherever a break would help,
+# and lets a lone URL run on; tables and code blocks may run longer.
+line-length = 80
+code-blocks = false
+stern = true
+
+[MD024]
+# Keep a Changelog repeats Fixed, Changed and Added under each version.
+siblings-only = true
+
+[MD033]
+# The README folds reference sections, with <b> in their <summary>;
+# nothing else needs HTML, and the title is a plain #.
+allowed-elements = ["b", "code", "details", "summary"]
+
+[MD060]
+# Tables are aligned, so their source reads like the rendered page.
+style = "aligned"
+
+[MD088]
+# The em-dash, the en-dash and the curly quotes stay out of files (writing.md).
+normalize-dashes = true
+normalize-quotes = true

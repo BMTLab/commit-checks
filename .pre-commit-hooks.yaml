@@ -1,0 +1,41 @@
+# .pre-commit-hooks.yaml
+#
+# The hooks that a repository takes from commit-checks
+# in its .pre-commit-config.yaml, by their ids.
+# Each one runs commit-checks.py as a script: the standard library is all it needs,
+# so pre-commit installs nothing for it.
+
+- id: trailers
+  name: git parses every trailer of the message
+  description: Every trailer of the message is one that git parses, in one block at the end.
+  entry: commit-checks.py trailers
+  language: script
+  stages: [commit-msg]
+
+- id: references
+  name: no file names a path that the commit moves or deletes
+  description: No file of the index names a path that the commit renames or deletes.
+  entry: commit-checks.py references
+  language: script
+  pass_filenames: false
+  always_run: true
+  stages: [pre-commit]
+
+- id: temporary-files
+  name: the commit adds no temporary file
+  description: The commit adds no file that an editor, a merge or patch leaves behind.
+  entry: commit-checks.py temporary
+  language: script
+  pass_filenames: false
+  always_run: true
+  stages: [pre-commit]
+
+- id: untracked-files
+  name: the files that the commit leaves out
+  description: List the untracked files, which the commit leaves out; it never fails.
+  entry: commit-checks.py untracked
+  language: script
+  pass_filenames: false
+  always_run: true
+  verbose: true
+  stages: [pre-commit]

@@ -1,0 +1,66 @@
+# Working in this repository
+
+commit-checks gives git hooks the checks that only a commit can make:
+the trailers of the message, the references to the paths it moves,
+and the files it adds or leaves out.
+pre-commit runs it from `.pre-commit-hooks.yaml`,
+in the repositories of the user.
+
+## Map
+
+- `commit-checks.py`: the one script, in regions:
+  Constants, Errors, git, Trailers, References, Index and Commands.
+- `.pre-commit-hooks.yaml`: the hooks that a repository takes by their ids.
+- `tests/commit-checks.bats`: the tests, in throwaway repositories;
+  `tests/support/helpers.bash` makes them.
+- `pyproject.toml`: the settings of ruff and mypy; there is no package.
+- `Makefile`: every task; `make help` lists them.
+- `.pre-commit-config.yaml`, `committed.toml`: the git hooks of `make hooks`,
+  which check only what a commit adds and its message.
+
+## Before and after a change
+
+- Run `make check`: it must be green before you start and after you finish.
+- A check belongs here only when nothing but a commit can show it:
+  the message, or the index against HEAD.
+  What holds for the working tree, such as a linter, belongs in `make check`
+  of the repository that wants it.
+- A new hook gets its id in `.pre-commit-hooks.yaml`,
+  its command in the script, a test, and a line in the README.
+- A repository pins this one by a commit, so a change reaches it
+  only when it moves its `rev`.
+
+## Language and punctuation
+
+Text and comments follow `writing.md`, and the code `python.md`,
+the rules in `~/.claude/rules`.
+The README follows the standard of ScriptsLib.
+
+## Python
+
+- The standard library only, so a commit never waits for an install.
+- git runs through `run_git` alone, with an argv list and a timeout,
+  and its output is read as bytes.
+- A failure that the script expects ends with its code and a message,
+  and anything else shows its traceback.
+
+## Exit codes
+
+The card, `--help` and the README list every code, and a test checks:
+10 for usage, then one code for each check, then 50 for git.
+A new code takes the next free ten.
+
+## Tests
+
+- One rule per test, named as a sentence,
+  in the sections Arrange, Act and Assert.
+- Each test makes its repository under `BATS_TEST_TMPDIR`,
+  with a git config of its own, so the config of the machine changes nothing.
+
+## Versions and git
+
+- `VERSION` in the script and the CHANGELOG move together,
+  under `## [Unreleased]` until a release.
+- One branch, `main`. Commits are signed;
+  the message follows the skill `writing-commits`.
+- Nothing is pushed without the word of the user.
