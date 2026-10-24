@@ -61,6 +61,10 @@ A new code takes the next free ten.
 
 - `VERSION` in the script and the CHANGELOG move together,
   under `## [Unreleased]` until a release.
+- A release dates the section of its version, as `## [1.0.0] - 2026-10-24`,
+  and the signed tag `vX.Y.Z` sits on that commit:
+  other repositories pin the hooks by that tag,
+  from `github.com/BMTLab/commit-checks`.
 - One branch, `main`. Commits are signed;
   the message follows the skill `writing-commits`.
 - Nothing is pushed without the word of the user.
