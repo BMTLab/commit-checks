@@ -27,7 +27,7 @@ and the files that it adds or leaves out.
 
 ## Install
 
-commit-checks needs Python 3.14 and git.
+commit-checks needs git and Python 3.10 or newer as `python3`.
 `make install` links the script into `~/.local/bin` as `commit-checks`,
 for a run by hand; the hooks need no install.
 
@@ -111,6 +111,9 @@ make hooks    # installs the git hooks of this repository, once per clone
 
 The tests run the script in throwaway repositories under `BATS_TEST_TMPDIR`,
 with a git config of their own.
+`make check` runs them twice: with the `python3` of the machine,
+and through `make test-floor` with Python 3.10, which uv brings,
+since a hook runs under the `python3` of each machine that commits.
 
 ## License
 

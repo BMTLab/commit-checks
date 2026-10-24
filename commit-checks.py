@@ -4,7 +4,7 @@
 Usage: commit-checks COMMAND [ARGUMENT...]
 Effects: none; it reads the index and the message of a commit,
   and changes neither.
-Dependencies: git.
+Dependencies: git, and Python 3.10 or newer as python3.
 Exit codes:
   0 success,
   10 CC_ERR_USAGE,
@@ -24,6 +24,10 @@ How it works:
 
 Version: 1.0.0
 """
+
+# Python 3.13 and older evaluate annotations when a def runs,
+# and the names of TYPE_CHECKING below exist only for mypy.
+from __future__ import annotations
 
 import fnmatch
 import re
@@ -459,7 +463,10 @@ def ere_pattern(name: str) -> str:
     str
         An extended regular expression for ``git grep -E``.
     """
-    return f"{NAME_BEFORE}{ERE_SPECIAL.sub(r'\\\1', name)}{NAME_AFTER}"
+    # Python 3.11 and older take no backslash inside the braces of an f-string.
+    escaped = ERE_SPECIAL.sub(r"\\\1", name)
+
+    return f"{NAME_BEFORE}{escaped}{NAME_AFTER}"
 
 
 def names_of(move: Move, indexed_names: set[str]) -> list[str]:

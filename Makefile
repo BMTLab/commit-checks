@@ -23,6 +23,12 @@ BATS_FILES := $(wildcard tests/*.bats)
 # BATS_JOBS='--jobs 1' on the command line runs them one by one.
 BATS_JOBS := $(if $(shell command -v parallel),--jobs $(shell nproc))
 
+# A hook runs under the python3 that PATH finds on each machine that commits,
+# so test-floor runs the tests again with python3 as the oldest Python they support,
+# which uv brings.
+PYTHON_FLOOR := 3.10
+UV ?= uv
+
 help: ## List the tasks
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) \
 	  | awk -F ':.*## ' '{ printf "  %-14s %s\n", $$1, $$2 }'
@@ -50,7 +56,15 @@ format-check: ## Check the format of the Python and the shell code
 test: ## Run every test
 	bats $(BATS_JOBS) tests
 
-check: lint format-check test ## Run everything a change must pass
+test-floor: ## Run every test with python3 as the oldest Python that the hooks support
+	$(UV) python install --quiet $(PYTHON_FLOOR)
+	floor_bin="$$(mktemp -d)"; \
+	  trap "rm -rf -- $${floor_bin@Q}" EXIT; \
+	  ln -s -- "$$($(UV) python find $(PYTHON_FLOOR))" "$${floor_bin}/python3"; \
+	  printf 'python3 is %s\n' "$$("$${floor_bin}/python3" --version)"; \
+	  PATH="$${floor_bin}:$${PATH}" bats $(BATS_JOBS) tests
+
+check: lint format-check test test-floor ## Run everything a change must pass
 
 install: ## Link the script into INSTALL_DIR as commit-checks
 	mkdir -p -- '$(INSTALL_DIR)'
@@ -65,4 +79,4 @@ uninstall: ## Remove the link that install made
 hooks: ## Install the git hooks of .pre-commit-config.yaml, for commits and their messages
 	$(PRE_COMMIT) install --install-hooks
 
-.PHONY: help lint lint-python lint-shell lint-md format format-check test check install uninstall hooks
+.PHONY: help lint lint-python lint-shell lint-md format format-check test test-floor check install uninstall hooks

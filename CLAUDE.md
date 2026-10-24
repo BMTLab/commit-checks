@@ -38,6 +38,9 @@ The README follows the standard of ScriptsLib.
 
 ## Python
 
+- The code keeps to Python 3.10, since a hook runs
+  under the `python3` of each machine that commits:
+  ruff and mypy check it as 3.10, and `make test-floor` runs the tests there.
 - The standard library only, so a commit never waits for an install.
 - git runs through `run_git` alone, with an argv list and a timeout,
   and its output is read as bytes.

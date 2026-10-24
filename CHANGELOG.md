@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+### Fixed
+
+- The hooks ran only under Python 3.14.
+  An older `python3` stopped at once: 3.12 and 3.13 with a `NameError`
+  on the annotations, and 3.11 and older with a `SyntaxError`.
+  They now run under Python 3.10 or newer,
+  and `make check` runs the tests under 3.10 too.
+
 ## [1.0.0] - 2026-10-24
 
 ### Added

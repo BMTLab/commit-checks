@@ -2,12 +2,14 @@
 #
 # The settings of the Python tools; commit-checks is one script, not a package,
 # and needs nothing beyond the standard library, so a commit never waits for an install.
+# A hook runs under the python3 of each machine that commits,
+# so ruff and mypy check the code as Python 3.10, the oldest that it supports.
 # ruff follows the ScriptsLib profile of gaming-mode:
 # every rule group listed there, preview, line length 99, numpy docstrings.
 # mypy runs in its strictest mode.
 
 [tool.ruff]
-target-version = "py314"
+target-version = "py310"
 line-length = 99
 
 [tool.ruff.lint]
@@ -43,7 +45,7 @@ convention = "numpy"
 docstring-code-format = true
 
 [tool.mypy]
-python_version = "3.14"
+python_version = "3.10"
 strict = true
 warn_unreachable = true
 warn_no_return = true
