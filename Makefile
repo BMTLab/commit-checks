@@ -3,7 +3,8 @@
 # The tasks of commit-checks; `make help` lists them.
 
 SHELL := bash
-.SHELLFLAGS := -o errexit -o nounset -o pipefail -c
+# inherit_errexit keeps errexit on inside each $(...) of a recipe.
+.SHELLFLAGS := -O inherit_errexit -o errexit -o nounset -o pipefail -c
 .DEFAULT_GOAL := help
 
 SCRIPT := commit-checks.py
@@ -58,11 +59,13 @@ test: ## Run every test
 
 test-floor: ## Run every test with python3 as the oldest Python that the hooks support
 	$(UV) python install --quiet $(PYTHON_FLOOR)
-	floor_bin="$$(mktemp -d)"; \
-	  trap "rm -rf -- $${floor_bin@Q}" EXIT; \
-	  ln -s -- "$$($(UV) python find $(PYTHON_FLOOR))" "$${floor_bin}/python3"; \
-	  printf 'python3 is %s\n' "$$("$${floor_bin}/python3" --version)"; \
-	  PATH="$${floor_bin}:$${PATH}" bats $(BATS_JOBS) $(BATS_FILES)
+	floor_directory="$$(mktemp -d)"; \
+	  trap "rm -rf -- $${floor_directory@Q}" EXIT; \
+	  python_path="$$($(UV) python find $(PYTHON_FLOOR))"; \
+	  ln -s -- "$${python_path}" "$${floor_directory}/python3"; \
+	  python_version="$$("$${floor_directory}/python3" --version)"; \
+	  printf 'python3 is %s\n' "$${python_version}"; \
+	  PATH="$${floor_directory}:$${PATH}" bats $(BATS_JOBS) $(BATS_FILES)
 
 check: lint format-check test test-floor ## Run everything a change must pass
 
@@ -70,11 +73,13 @@ install: ## Link the script into INSTALL_DIR as commit-checks
 	mkdir -p -- '$(INSTALL_DIR)'
 	ln -sfn -- '$(CURDIR)/$(SCRIPT)' '$(INSTALL_DIR)/$(INSTALL_NAME)'
 
-# Only a link into this checkout goes, so a commit-checks of another source stays.
+# Only a link into this checkout goes, so a commit-checks of another source stays;
+# a missing link is no failure, since there is nothing to remove.
 uninstall: ## Remove the link that install made
-	if [[ "$$(readlink -- '$(INSTALL_DIR)/$(INSTALL_NAME)')" == '$(CURDIR)/$(SCRIPT)' ]]; then \
-	  rm -- '$(INSTALL_DIR)/$(INSTALL_NAME)'; \
-	fi
+	link_target="$$(readlink -- '$(INSTALL_DIR)/$(INSTALL_NAME)' || true)"; \
+	  if [[ "$${link_target}" == '$(CURDIR)/$(SCRIPT)' ]]; then \
+	    rm -- '$(INSTALL_DIR)/$(INSTALL_NAME)'; \
+	  fi
 
 hooks: ## Install the git hooks of .pre-commit-config.yaml, for commits and their messages
 	$(PRE_COMMIT) install --install-hooks
