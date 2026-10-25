@@ -1,0 +1,74 @@
+# .github/workflows/ci.yml
+#
+# make check on GitHub: the linters, the formats, the unit tests,
+# and the bats tests under the python3 of the runner and under Python 3.10.
+# It runs on pushes and pull requests to main, on version tags,
+# once a week (so a drifting runner image shows up without a push), and by hand.
+# uv brings Python and every tool of make check at the versions of uv.lock;
+# bats, which PyPI does not have, comes from the commit of its pinned tag.
+# Every action is pinned to a commit, with its version in a comment;
+# Dependabot moves both together.
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '23 4 * * 1'
+  workflow_dispatch:
+
+# A newer push to the same branch or pull request cancels the run it makes obsolete.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+# Each job asks for what it needs, and nothing by default.
+permissions: {}
+
+jobs:
+  check:
+    name: make check
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    env:
+      BATS_VERSION: '1.14.0'
+      BATS_COMMIT: 'eb7f42f8d608ac693d7a4b67474f6714ea68cfc5'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The release asset of uv is checked against the digest of its release.
+      - name: Install uv
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: '0.13.5'
+          checksum: 'f68d291c75783122dad58ab77def0e13f3233f358731db5d6d7e8715603b928f'
+
+      # A moved tag would bring another commit: the clone must be the pinned one.
+      - name: Install bats
+        run: |
+          git clone --quiet --depth 1 --branch "v${BATS_VERSION}" \
+            https://github.com/bats-core/bats-core.git "${RUNNER_TEMP}/bats-core"
+          commit="$(git -C "${RUNNER_TEMP}/bats-core" rev-parse HEAD)"
+          if [[ "${commit}" != "${BATS_COMMIT}" ]]; then
+            printf '::error::bats v%s is %s, not %s\n' "${BATS_VERSION}" "${commit}" "${BATS_COMMIT}"
+            exit 1
+          fi
+          "${RUNNER_TEMP}/bats-core/install.sh" "${RUNNER_TEMP}/bats"
+          printf '%s\n' "${RUNNER_TEMP}/bats/bin" >>"${GITHUB_PATH}"
+
+      - name: make check
+        run: make check

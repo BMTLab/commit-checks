@@ -5,6 +5,8 @@ the trailers of its message and the length of its lines,
 the references to the paths that it renames or deletes,
 and the files that it adds or leaves out.
 
+[![CI][ci-badge]][ci]
+
 ## Features
 
 - The commit-msg hook `trailers` finds each line that looks like a trailer
@@ -126,7 +128,7 @@ so a reference to the directory itself stays unchecked.
 ## Development
 
 ```bash
-make check    # ruff, mypy, shellcheck, rumdl, the formats and the tests
+make check    # the linters, the formats and the tests, as CI runs them
 make hooks    # installs the git hooks of this repository, once per clone
 ```
 
@@ -136,9 +138,13 @@ under `BATS_TEST_TMPDIR`, with a git config of their own.
 `make check` runs them twice: with the `python3` of the machine,
 and through `make test-floor` with Python 3.10, which uv brings,
 since a hook runs under the `python3` of each machine that commits.
-uv also brings ruff, mypy, ShellCheck, shfmt, rumdl and pre-commit,
-at the versions of `uv.lock`; bats comes from the system.
+uv also brings ruff, mypy, ShellCheck, shfmt, rumdl, pre-commit,
+actionlint and zizmor, at the versions of `uv.lock`; bats comes from the system.
+CI runs `make check` on GitHub for each push and pull request.
 
 ## License
 
 MIT, see [LICENSE](LICENSE).
+
+[ci-badge]: https://github.com/BMTLab/commit-checks/actions/workflows/ci.yml/badge.svg
+[ci]: https://github.com/BMTLab/commit-checks/actions/workflows/ci.yml

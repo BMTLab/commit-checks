@@ -1,0 +1,12 @@
+# .github/actionlint.yaml
+#
+# Settings for actionlint
+# (https://github.com/rhysd/actionlint/blob/main/docs/config.md),
+# which make lint-workflows runs.
+
+self-hosted-runner:
+  # actionlint 1.7.12 predates the ubuntu-26.04 runner image of GitHub,
+  # so the label is declared here;
+  # drop it once a newer actionlint knows the label itself.
+  labels:
+    - ubuntu-26.04

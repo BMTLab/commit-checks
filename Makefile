@@ -21,6 +21,8 @@ SHELLCHECK ?= $(UV) run --locked --quiet shellcheck
 SHFMT ?= $(UV) run --locked --quiet shfmt
 RUMDL ?= $(UV) run --locked --quiet rumdl
 PYTEST ?= $(UV) run --locked --quiet pytest
+ACTIONLINT ?= $(UV) run --locked --quiet actionlint
+ZIZMOR ?= $(UV) run --locked --quiet zizmor
 PRE_COMMIT ?= $(UV) run --locked --quiet pre-commit
 
 SHELL_FILES := tests/support/test-helper.bash
@@ -39,7 +41,7 @@ help: ## List the tasks
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) \
 	  | awk -F ':.*## ' '{ printf "  %-14s %s\n", $$1, $$2 }'
 
-lint: lint-python lint-shell lint-md ## Run every linter
+lint: lint-python lint-shell lint-md lint-workflows ## Run every linter
 
 lint-python: ## ruff and mypy, as pyproject.toml sets them
 	$(RUFF) check .
@@ -50,6 +52,12 @@ lint-shell: ## shellcheck, on the tests
 
 lint-md: ## rumdl, on every Markdown file, as .rumdl.toml says
 	$(RUMDL) check .
+
+# actionlint runs ShellCheck on each run block, from PATH, which uv run fills;
+# zizmor runs its offline audits, which need no token of GitHub.
+lint-workflows: ## actionlint and zizmor, on the workflows of .github
+	$(ACTIONLINT)
+	$(ZIZMOR) --offline .github/workflows
 
 format: ## Format the Python and the shell code
 	$(RUFF) format .
@@ -94,4 +102,4 @@ uninstall: ## Remove the link that install made
 hooks: ## Install the git hooks of .pre-commit-config.yaml, for commits and their messages
 	$(PRE_COMMIT) install --install-hooks
 
-.PHONY: help lint lint-python lint-shell lint-md format format-check test test-unit test-integration test-floor check install uninstall hooks
+.PHONY: help lint lint-python lint-shell lint-md lint-workflows format format-check test test-unit test-integration test-floor check install uninstall hooks
