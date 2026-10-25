@@ -8,10 +8,25 @@
 # every rule group below, with its preview rules, a line length of 99 and numpy docstrings.
 # mypy runs in its strictest mode.
 
-# The tools of make check, which uv.lock pins.
+# The tools of make check and of the git hooks, which uv.lock pins;
+# bats comes from the system, since PyPI has no package of it.
 # There is no [project] table, since there is no package to build or install.
 [dependency-groups]
-dev = ["mypy>=2.4.0", "ruff>=0.17.2"]
+dev = [
+  "mypy>=2.4.0",
+  "pre-commit>=4.7.0",
+  "rumdl>=0.3.0",
+  "ruff>=0.17.2",
+  "shellcheck-py>=0.11.0.1",
+  "shfmt-py>=4.2.0",
+]
+
+[tool.uv]
+# The tools run under the Python of .python-version alone,
+# so uv.lock holds one version of each, for that Python.
+# A bound such as >= 3.14 would equal the requires-python that uv derives from it,
+# and uv would then find the lock out of date at each run.
+environments = ["python_version == '3.14'"]
 
 [tool.ruff]
 # The oldest Python that a hook meets, where the profile says py314.

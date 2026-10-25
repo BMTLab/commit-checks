@@ -11,12 +11,16 @@ SCRIPT := commit-checks.py
 INSTALL_DIR ?= $(HOME)/.local/bin
 INSTALL_NAME ?= commit-checks
 
-# ruff and mypy come from the group dev of pyproject.toml, at the versions of uv.lock.
+# The tools come from the group dev of pyproject.toml, at the versions of uv.lock;
+# bats alone comes from PATH.
 # --quiet hides the note of uv that a repository without a package has no requires-python.
 UV ?= uv
 RUFF ?= $(UV) run --locked --quiet ruff
 MYPY ?= $(UV) run --locked --quiet mypy
-PRE_COMMIT ?= pre-commit
+SHELLCHECK ?= $(UV) run --locked --quiet shellcheck
+SHFMT ?= $(UV) run --locked --quiet shfmt
+RUMDL ?= $(UV) run --locked --quiet rumdl
+PRE_COMMIT ?= $(UV) run --locked --quiet pre-commit
 
 SHELL_FILES := tests/support/test-helper.bash
 BATS_FILES := $(wildcard tests/*/*.bats)
@@ -41,18 +45,18 @@ lint-python: ## ruff and mypy, as pyproject.toml sets them
 	$(MYPY) $(SCRIPT)
 
 lint-shell: ## shellcheck, on the tests
-	shellcheck $(SHELL_FILES) $(BATS_FILES)
+	$(SHELLCHECK) $(SHELL_FILES) $(BATS_FILES)
 
 lint-md: ## rumdl, on every Markdown file, as .rumdl.toml says
-	rumdl check .
+	$(RUMDL) check .
 
 format: ## Format the Python and the shell code
 	$(RUFF) format .
-	shfmt -w $(SHELL_FILES) $(BATS_FILES)
+	$(SHFMT) -w $(SHELL_FILES) $(BATS_FILES)
 
 format-check: ## Check the format of the Python and the shell code
 	$(RUFF) format --check .
-	shfmt -d $(SHELL_FILES) $(BATS_FILES)
+	$(SHFMT) -d $(SHELL_FILES) $(BATS_FILES)
 
 test: ## Run every test
 	bats $(BATS_JOBS) $(BATS_FILES)
