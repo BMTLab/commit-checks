@@ -1,43 +1,62 @@
 # .rumdl.toml
 #
 # The Markdown rules of the repository, read by rumdl (https://rumdl.dev)
-# in `make lint-md`, in the git hooks and in editors that know it.
-# Every rule of markdownlint applies under its number, with these settings:
+# in `make lint-md` and in editors that know it.
+# They follow the profile that every repository of the maintainer copies:
+# the rules of markdownlint keep their numbers and defaults, with these changes.
 
 [global]
 # MD060 aligns tables and MD088 finds dashes; rumdl leaves both off.
 extend-enable = ["MD060", "MD088"]
-# MD088 would put a hyphen where the dash was;
+# MD088 would put a hyphen where the dash was,
+# and a hyphen between spaces is a dash too:
 # the sentence takes a comma, a colon or a full stop instead.
 # rumdl fixes all of MD088 or none of it, so a curly quote is changed by hand too.
 unfixable = ["MD088"]
-# Every file takes milliseconds,
-# so a cache would only be one more folder in the repository.
+# A file takes milliseconds, so a cache would only leave
+# a .rumdl_cache folder in the repository.
 cache = false
 
+[MD004]
+# A list takes `-`, as every file here does.
+style = "dash"
+
+[MD009]
+# A break inside a paragraph is a backslash at the end of the line:
+# two trailing spaces make one too, but nobody sees them.
+strict = true
+
 [MD013]
-# Prose breaks a line where a reader would pause,
-# with lines of at most 80 columns;
-# stern flags a longer line wherever a break would help,
-# and lets a lone URL run on; tables and code blocks may run longer.
-line-length = 80
+# Lines break where a reader pauses, with no fixed length,
+# so the limit only catches a paragraph left on one line.
+# stern flags every long line that a break would help,
+# and lets a lone URL run on; code blocks and tables may run longer.
+line-length = 100
 code-blocks = false
 stern = true
 
 [MD024]
-# Keep a Changelog repeats Fixed, Changed and Added under each version.
+# Keep a Changelog repeats Added, Changed and Fixed under each version.
 siblings-only = true
 
 [MD033]
-# The README folds reference sections, with <b> in their <summary>;
-# nothing else needs HTML, and the title is a plain #.
-allowed-elements = ["b", "code", "details", "summary"]
+# A README may fold long sections, name keys,
+# and give an image in a light and a dark version;
+# <b> and <code> mark up a <summary>, where Markdown does not render.
+# Nothing else needs HTML: a title is a plain #, never centered.
+allowed-elements = ["b", "code", "details", "img", "kbd", "picture", "source", "summary"]
+
+[MD050]
+# Bold takes `**`, as every file here does.
+style = "asterisk"
 
 [MD060]
-# Tables are aligned, so their source reads like the rendered page.
+# Tables are aligned, so their source reads like the rendered page;
+# rumdl fmt aligns them.
 style = "aligned"
 
 [MD088]
-# The em dash, the en dash and the curly quotes stay out of files, as CLAUDE.md says.
+# The em dash, the en dash and the curly quotes stay out of files, as CLAUDE.md says;
+# MD088 leaves the guillemets alone, as real quotes of some languages.
 normalize-dashes = true
 normalize-quotes = true
