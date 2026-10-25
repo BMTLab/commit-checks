@@ -11,8 +11,8 @@ in the repositories that take its hooks.
 - `commit-checks.py`: the one script, in regions: Constants, Errors, git,
   Message, Trailers, Line length, References, Index and Commands.
 - `.pre-commit-hooks.yaml`: the hooks that a repository takes by their ids.
-- `tests/commit-checks.bats`: the tests, in throwaway repositories;
-  `tests/support/helpers.bash` makes them.
+- `tests/integration/commit-checks.bats`: the tests, in throwaway repositories;
+  `tests/support/test-helper.bash` makes them.
 - `pyproject.toml`, `uv.lock`: ruff and mypy, their settings
   and their versions; there is no package.
 - `Makefile`: every task; `make help` lists them.

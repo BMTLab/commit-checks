@@ -17,8 +17,8 @@ RUFF ?= $(UV) run --locked --quiet ruff
 MYPY ?= $(UV) run --locked --quiet mypy
 PRE_COMMIT ?= pre-commit
 
-SHELL_FILES := tests/support/helpers.bash
-BATS_FILES := $(wildcard tests/*.bats)
+SHELL_FILES := tests/support/test-helper.bash
+BATS_FILES := $(wildcard tests/*/*.bats)
 # bats runs the tests at the same time where GNU parallel is,
 # since each test keeps its repository in BATS_TEST_TMPDIR;
 # BATS_JOBS='--jobs 1' on the command line runs them one by one.
@@ -54,7 +54,7 @@ format-check: ## Check the format of the Python and the shell code
 	shfmt -d $(SHELL_FILES) $(BATS_FILES)
 
 test: ## Run every test
-	bats $(BATS_JOBS) tests
+	bats $(BATS_JOBS) $(BATS_FILES)
 
 test-floor: ## Run every test with python3 as the oldest Python that the hooks support
 	$(UV) python install --quiet $(PYTHON_FLOOR)
@@ -62,7 +62,7 @@ test-floor: ## Run every test with python3 as the oldest Python that the hooks s
 	  trap "rm -rf -- $${floor_bin@Q}" EXIT; \
 	  ln -s -- "$$($(UV) python find $(PYTHON_FLOOR))" "$${floor_bin}/python3"; \
 	  printf 'python3 is %s\n' "$$("$${floor_bin}/python3" --version)"; \
-	  PATH="$${floor_bin}:$${PATH}" bats $(BATS_JOBS) tests
+	  PATH="$${floor_bin}:$${PATH}" bats $(BATS_JOBS) $(BATS_FILES)
 
 check: lint format-check test test-floor ## Run everything a change must pass
 

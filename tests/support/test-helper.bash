@@ -7,7 +7,7 @@
 # as the git config of a committer may: git then still reads a block of trailers
 # that holds one broken line, and drops that line alone.
 
-COMMIT_CHECKS="${BATS_TEST_DIRNAME}/../commit-checks.py"
+COMMIT_CHECKS="${BATS_TEST_DIRNAME}/../../commit-checks.py"
 
 #######################################
 # Read the value of an exit code from the constants of commit-checks.py.

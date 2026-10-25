@@ -4,7 +4,7 @@
 
 bats_require_minimum_version 1.11.0
 
-load 'support/helpers'
+load '../support/test-helper'
 
 function setup() {
   make_repository
@@ -473,7 +473,7 @@ done
     if [[ "${help_text}" != *"${value}  ${name}:"* ]]; then
       violations+=("${name}: missing from --help")
     fi
-    if ! grep -qE "^\| +\`${value}\` +\| +\`${name}\` +\|" "${BATS_TEST_DIRNAME}/../README.md"; then
+    if ! grep -qE "^\| +\`${value}\` +\| +\`${name}\` +\|" "${BATS_TEST_DIRNAME}/../../README.md"; then
       violations+=("${name}: missing from the table of README.md")
     fi
   done < <(sed -n 's/^\(CC_ERR_[A-Z_]*\): Final = \([0-9]*\)$/\1 \2/p' "${COMMIT_CHECKS}")
