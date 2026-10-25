@@ -976,7 +976,8 @@ def command_untracked(arguments: Sequence[str]) -> int:
     paths = untracked_paths()
     write_lines(sys.stdout, paths[:UNTRACKED_SHOWN])
     if len(paths) > UNTRACKED_SHOWN:
-        write_lines(sys.stdout, [f"and {len(paths) - UNTRACKED_SHOWN} more"])
+        # stdout holds paths alone, so the count of the rest is a message.
+        report(f"and {len(paths) - UNTRACKED_SHOWN} more untracked files")
 
     return 0
 

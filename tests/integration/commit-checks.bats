@@ -545,6 +545,24 @@ done
   [[ -z "${output}" ]]
 }
 
+@test "past the first 20 untracked files, a line on stderr counts the rest" {
+  # Arrange
+  local number
+
+  commit_files 'README.md' 'Readme.'
+  for number in {1..22}; do
+    printf 'draft\n' >"draft-${number}.md"
+  done
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" untracked
+
+  # Assert
+  ((status == 0))
+  ((${#lines[@]} == 20))
+  [[ "${stderr}" == 'commit-checks: and 2 more untracked files' ]]
+}
+
 # endregion Temporary and untracked files
 
 # region Error model

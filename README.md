@@ -84,7 +84,7 @@ commit-checks untracked
   `*.orig`, `*.rej`, `*.bak`, `*.swp`, `*.swo`, `*~`, `.#*`, `#*#`, `*.tmp`,
   `.DS_Store` or `Thumbs.db`.
 - `untracked`: the untracked files that git does not ignore, one per line;
-  past the first 20, a last line counts the rest.
+  past the first 20, a line on stderr counts the rest.
 
 Each finding is a line on stdout, and the lines on stderr say what to do.
 

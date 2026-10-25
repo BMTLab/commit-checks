@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+### Changed
+
+- `untracked` counts the files past the first 20 on stderr, not on stdout,
+  so that stdout holds paths alone.
+
 ### Fixed
 
 - The hooks `line-length` and `trailers` ended a line of the message
