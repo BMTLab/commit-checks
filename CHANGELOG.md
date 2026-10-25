@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+### Fixed
+
+- The hooks `line-length` and `trailers` ended a line of the message
+  at a carriage return, a form feed or another character
+  that Python takes for a line break, where git does not:
+  a long line with a form feed in it passed `line-length`.
+  Now a line ends at a newline alone, as in git.
+
 ## [1.1.0] - 2026-10-25
 
 ### Added

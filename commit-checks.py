@@ -234,6 +234,23 @@ def is_comment(line: str) -> bool:
     return line.startswith(COMMENT_CHARACTER)
 
 
+def read_message(message: Path) -> str:
+    """Read the file of a commit message as bytes, and decode them as UTF-8.
+
+    Parameters
+    ----------
+    message
+        The file of the commit message, as the commit-msg hook gets it.
+
+    Returns
+    -------
+    str
+        The text, with each carriage return where the file holds it.
+    """
+    # read_text would turn a lone carriage return into a newline, which git keeps in its line.
+    return message.read_bytes().decode("utf-8", errors="replace")
+
+
 def message_lines(text: str) -> list[tuple[int, str]]:
     """Return the lines of a message that git keeps, each with its number in the file.
 
@@ -249,7 +266,9 @@ def message_lines(text: str) -> list[tuple[int, str]]:
         for every line above the diff that is no comment.
     """
     lines: list[tuple[int, str]] = []
-    for number, line in enumerate(text.splitlines(), start=1):
+    # git ends a line at a newline alone; splitlines would also end it
+    # at a carriage return, a form feed or U+2028.
+    for number, line in enumerate(text.split("\n"), start=1):
         if line == f"{COMMENT_CHARACTER} {SCISSORS}":
             break
         if not is_comment(line):
@@ -374,7 +393,9 @@ def parsed_keys(lines: Sequence[str]) -> list[str]:
     message = "\n".join(lines) + "\n"
     output = run_git(["interpret-trailers", "--parse", "--no-divider"], stdin=message.encode())
 
-    return [trailer_key(line) for line in output.decode("utf-8", errors="replace").splitlines()]
+    trailers = output.decode("utf-8", errors="replace").split("\n")
+
+    return [trailer_key(line) for line in trailers if line]
 
 
 def unparsed_lines(paragraph: Sequence[str], keys: Sequence[str]) -> list[str]:
@@ -418,7 +439,7 @@ def check_trailers(message: Path) -> list[str]:
     list[str]
         One finding per line.
     """
-    lines = kept_lines(message.read_text(encoding="utf-8", errors="replace"))
+    lines = kept_lines(read_message(message))
     # The first paragraph is the subject, which carries no trailer.
     body = paragraphs(lines)[1:]
     if not body:
@@ -461,7 +482,7 @@ def check_line_length(message: Path) -> list[str]:
     list[str]
         One finding per line, with its number in the file.
     """
-    text = message.read_text(encoding="utf-8", errors="replace")
+    text = read_message(message)
 
     # len counts characters, so a letter of two or more bytes in UTF-8 counts once.
     return [

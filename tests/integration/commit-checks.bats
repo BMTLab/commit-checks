@@ -213,6 +213,35 @@ bats_test_function --description 'a line of 73 Latin letters fails, and names th
 bats_test_function --description 'a line of 73 Cyrillic letters fails, and names the line' \
   -- a_line_of_73_characters_fails 'ж'
 
+#######################################
+# Check that a character which Python takes for a line break, but git does not,
+# leaves its line whole, so that the line fails when it is too long.
+#
+# Arguments:
+#   1: The character inside the line, such as a form feed.
+#######################################
+function a_break_that_git_keeps_leaves_the_line_whole() {
+  # Arrange
+  local start end line message
+
+  start="$(repeat_character 'a' 60)"
+  end="$(repeat_character 'b' 40)"
+  line="${start}$1${end}"
+  message="$(write_message 'Fix the parser' '' "${line}")"
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
+
+  # Assert
+  ((status == CC_ERR_LINE_LENGTH))
+  [[ "${output}" == "line 3 has 101 characters: ${line}" ]]
+}
+
+bats_test_function --description 'a form feed inside a line leaves the line whole' \
+  -- a_break_that_git_keeps_leaves_the_line_whole $'\f'
+bats_test_function --description 'a carriage return inside a line leaves the line whole' \
+  -- a_break_that_git_keeps_leaves_the_line_whole $'\r'
+
 @test "a subject of 73 characters fails" {
   # Arrange
   local subject message
