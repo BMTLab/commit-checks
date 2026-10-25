@@ -4,9 +4,14 @@
 # and needs nothing beyond the standard library, so a commit never waits for an install.
 # A hook runs under the python3 of each machine that commits,
 # so ruff and mypy check the code as Python 3.10, the oldest that it supports.
-# ruff follows the ScriptsLib profile of gaming-mode:
-# every rule group listed there, preview, line length 99, numpy docstrings.
+# ruff checks every rule group listed below, with its preview rules,
+# a line length of 99 and numpy docstrings.
 # mypy runs in its strictest mode.
+
+# The tools of make check, which uv.lock pins.
+# There is no [project] table, since there is no package to build or install.
+[dependency-groups]
+dev = ["mypy>=2.4.0", "ruff>=0.17.2"]
 
 [tool.ruff]
 target-version = "py310"
@@ -21,14 +26,14 @@ select = [
     "TID", "TRY", "UP", "W", "DOC",
 ]
 ignore = [
-    "COM812",  # trailing commas: the formatter decides
-    "ISC001",  # implicit string concatenation: the formatter decides
-    "DOC201",  # a Returns section for every simple function is noise
+    "missing-trailing-comma",  # the formatter decides
+    "single-line-implicit-string-concatenation",  # the formatter decides
+    "docstring-missing-returns",  # a Returns section for every simple function is noise
 ]
 
 [tool.ruff.lint.per-file-ignores]
 # A script, not a package: a file name with hyphens, and no __init__.py.
-"commit-checks.py" = ["INP001", "N999"]
+"commit-checks.py" = ["implicit-namespace-package", "invalid-module-name"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10

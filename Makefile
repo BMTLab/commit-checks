@@ -10,10 +10,11 @@ SCRIPT := commit-checks.py
 INSTALL_DIR ?= $(HOME)/.local/bin
 INSTALL_NAME ?= commit-checks
 
-# ruff and mypy come from PATH, or from the environment of gaming-mode.
-VENV_BIN := ../gaming-mode/.venv/bin
-RUFF ?= $(or $(shell command -v ruff),$(VENV_BIN)/ruff)
-MYPY ?= $(or $(shell command -v mypy),$(VENV_BIN)/mypy)
+# ruff and mypy come from the group dev of pyproject.toml, at the versions of uv.lock.
+# --quiet hides the note of uv that a repository without a package has no requires-python.
+UV ?= uv
+RUFF ?= $(UV) run --locked --quiet ruff
+MYPY ?= $(UV) run --locked --quiet mypy
 PRE_COMMIT ?= pre-commit
 
 SHELL_FILES := tests/support/helpers.bash
@@ -27,7 +28,6 @@ BATS_JOBS := $(if $(shell command -v parallel),--jobs $(shell nproc))
 # so test-floor runs the tests again with python3 as the oldest Python they support,
 # which uv brings.
 PYTHON_FLOOR := 3.10
-UV ?= uv
 
 help: ## List the tasks
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) \
@@ -35,7 +35,7 @@ help: ## List the tasks
 
 lint: lint-python lint-shell lint-md ## Run every linter
 
-lint-python: ## ruff and mypy, in the ScriptsLib profile
+lint-python: ## ruff and mypy, as pyproject.toml sets them
 	$(RUFF) check .
 	$(MYPY) $(SCRIPT)
 

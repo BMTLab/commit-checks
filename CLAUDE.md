@@ -13,7 +13,8 @@ in the repositories that take its hooks.
 - `.pre-commit-hooks.yaml`: the hooks that a repository takes by their ids.
 - `tests/commit-checks.bats`: the tests, in throwaway repositories;
   `tests/support/helpers.bash` makes them.
-- `pyproject.toml`: the settings of ruff and mypy; there is no package.
+- `pyproject.toml`, `uv.lock`: ruff and mypy, their settings
+  and their versions; there is no package.
 - `Makefile`: every task; `make help` lists them.
 - `.pre-commit-config.yaml`, `committed.toml`: the git hooks of `make hooks`,
   which check only what a commit adds and its message.

@@ -127,6 +127,7 @@ with a git config of their own.
 `make check` runs them twice: with the `python3` of the machine,
 and through `make test-floor` with Python 3.10, which uv brings,
 since a hook runs under the `python3` of each machine that commits.
+uv also brings ruff and mypy, at the versions of `uv.lock`.
 
 ## License
 

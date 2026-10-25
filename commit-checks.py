@@ -33,7 +33,7 @@ from __future__ import annotations
 import fnmatch
 import re
 import shutil
-import subprocess  # noqa: S404 - git is the point
+import subprocess  # ruff: ignore[suspicious-subprocess-import] - git is the point
 import sys
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -170,7 +170,8 @@ def run_git(arguments: Sequence[str], stdin: bytes = b"", accepted: int = 0) -> 
         raise GitError(message)
 
     try:
-        completed = subprocess.run(  # noqa: S603 - git by its full path, with an argv list
+        # git runs by its full path, with an argv list.
+        completed = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
             [executable, *arguments],
             input=stdin,
             capture_output=True,
@@ -415,7 +416,8 @@ def check_trailers(message: Path) -> list[str]:
     """
     lines = kept_lines(message.read_text(encoding="utf-8", errors="replace"))
     blocks = paragraphs(lines)
-    if len(blocks) < 2:  # noqa: PLR2004 - the subject alone carries no trailer
+    # The subject alone carries no trailer.
+    if len(blocks) < 2:  # ruff: ignore[magic-value-comparison]
         return []
 
     findings: list[str] = []
