@@ -1,7 +1,9 @@
 # shellcheck shell=bash
 
-# Give the tests of commit-checks a throwaway repository and the script to run.
+# Give the tests of commit-checks a scratch home, a throwaway repository and the script to run.
 #
+# Each test runs in a home of its own, so git reads no file of the user,
+# such as the ~/.config/git/ignore that it reads even without a global config.
 # The repository has a git config of its own, so the config of the machine changes nothing.
 # It declares the trailer keys that the tests use, such as Why and Verified,
 # as the git config of a committer may: git then still reads a block of trailers
@@ -23,17 +25,46 @@ function exit_code() {
 }
 
 #######################################
+# Give the test a home, the folders of XDG, a TMPDIR and a folder of stand-ins
+# of its own, so that no test reaches a file of the user.
+#
+# Globals:
+#   FAKE_HOME: Set to the scratch home, which HOME names too.
+#   FAKE_BIN: Set to an empty folder for stand-ins, which comes first on PATH.
+#   HOME, XDG_CONFIG_HOME, XDG_CACHE_HOME, XDG_DATA_HOME, XDG_STATE_HOME,
+#   XDG_RUNTIME_DIR, TMPDIR, PATH: Exported for the scratch home.
+#   GIT_CONFIG_GLOBAL, GIT_CONFIG_NOSYSTEM: Exported, so that git reads no config
+#     but that of the test repository.
+#######################################
+function sandbox_setup() {
+  FAKE_HOME="${BATS_TEST_TMPDIR}/home"
+  FAKE_BIN="${BATS_TEST_TMPDIR}/bin"
+  export HOME="${FAKE_HOME}"
+  # A program that reads a folder of XDG from the environment stays in the home too.
+  export XDG_CONFIG_HOME="${FAKE_HOME}/.config"
+  export XDG_CACHE_HOME="${FAKE_HOME}/.cache"
+  export XDG_DATA_HOME="${FAKE_HOME}/.local/share"
+  export XDG_STATE_HOME="${FAKE_HOME}/.local/state"
+  # The runtime folder lies outside the home, as /run/user/UID does.
+  export XDG_RUNTIME_DIR="${BATS_TEST_TMPDIR}/run"
+  export TMPDIR="${BATS_TEST_TMPDIR}"
+  export PATH="${FAKE_BIN}:${PATH}"
+  # GIT_CONFIG_GLOBAL wins over HOME, where the environment of the user sets it.
+  export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+
+  mkdir -p -- "${FAKE_HOME}" "${FAKE_BIN}"
+  mkdir -m 0700 -- "${XDG_RUNTIME_DIR}"
+}
+
+#######################################
 # Make an empty repository in BATS_TEST_TMPDIR and enter it.
 #
 # Globals:
 #   REPOSITORY: Set to the path of the repository.
-#   GIT_CONFIG_GLOBAL, GIT_CONFIG_NOSYSTEM: Exported, to keep out the configs of the machine.
 #######################################
 function make_repository() {
   local key
 
-  export GIT_CONFIG_GLOBAL=/dev/null
-  export GIT_CONFIG_NOSYSTEM=1
   REPOSITORY="${BATS_TEST_TMPDIR}/repository"
 
   git init -q -b main -- "${REPOSITORY}"

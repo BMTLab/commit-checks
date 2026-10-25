@@ -7,8 +7,24 @@ bats_require_minimum_version 1.11.0
 load '../support/test-helper'
 
 function setup() {
+  sandbox_setup
   make_repository
 }
+
+# region Sandbox
+
+@test "git and the script see a scratch home of the test, not the home of the user" {
+  # Arrange: the scratch home of setup.
+
+  # Act
+  run --separate-stderr printenv HOME XDG_CONFIG_HOME
+
+  # Assert
+  [[ "${status}" -eq 0 ]]
+  [[ "${output}" == "${BATS_TEST_TMPDIR}/home"$'\n'"${BATS_TEST_TMPDIR}/home/.config" ]]
+}
+
+# endregion Sandbox
 
 # region Trailers
 
