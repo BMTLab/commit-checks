@@ -30,8 +30,9 @@ in the repositories that take its hooks.
   of the repository that wants it.
 - A new hook gets its id in `.pre-commit-hooks.yaml`,
   its command in the script, a test, and a line in the README.
-- A repository pins this one by a commit, so a change reaches it
-  only when it moves its `rev`.
+- Other repositories pin a release by the SHA of its tag,
+  as `pre-commit autoupdate --freeze` writes it,
+  so a change reaches them only when they move their `rev`.
 
 ## Language and punctuation
 
@@ -76,9 +77,8 @@ A new code takes the next free ten.
 - `VERSION` in the script and the CHANGELOG move together,
   under `## [Unreleased]` until a release.
 - A release dates the section of its version, as `## [1.0.0] - 2026-10-24`,
-  and the signed tag `vX.Y.Z` sits on that commit:
-  other repositories pin the hooks by that tag,
-  from `github.com/BMTLab/commit-checks`.
+  and the signed tag `vX.Y.Z` sits on that commit,
+  in `github.com/BMTLab/commit-checks`, where other repositories take the hooks.
 - One branch, `main`, and every commit is signed.
 - A commit message has a subject in the imperative mood,
   of at most 72 characters, and a body of git trailers,
