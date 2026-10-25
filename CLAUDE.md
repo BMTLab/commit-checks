@@ -37,9 +37,9 @@ in the repositories that take its hooks.
 - Text, comments and messages are in simple English:
   one idea in each sentence, common words, and the active voice.
 - A comment says why, or what the code does not show at a glance.
-- No em dash, no en dash and no curly quotes:
-  rumdl finds them in the Markdown files, and a hook finds the em dash
-  in the message of a commit.
+- No em dash, no en dash, no curly quotes and no guillemets:
+  rumdl finds the dashes and the curly quotes in the Markdown files,
+  and a hook finds all of them in the message of a commit.
 - The README keeps its order: Features, Install, Usage, Exit codes,
   How it works, Development and License.
 

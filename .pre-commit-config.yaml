@@ -13,7 +13,8 @@
 # A repository is pinned to a commit, with its version in a comment,
 # as `pre-commit autoupdate --freeze` writes it;
 # Dependabot moves both together, as it does for the actions.
-# The local hooks are patterns, which pre-commit matches itself.
+# The first local block runs the checks of this checkout;
+# the second holds patterns, which pre-commit matches itself.
 
 default_install_hook_types: [pre-commit, commit-msg]
 default_stages: [pre-commit]
@@ -101,11 +102,12 @@ repos:
         args: [--multiline]
         stages: [commit-msg]
 
-      # The em-dash (U+2014) stays out of messages as it stays out of files.
-      # pygrep matches bytes, so the pattern spells the dash in UTF-8;
-      # comment lines start with #, and git drops them.
-      - id: message-without-em-dash
-        name: no em-dash in the message
-        entry: '^(?!#).*\xe2\x80\x94'
+      # The dashes and the quotes that CLAUDE.md forbids stay out of messages
+      # as they stay out of files: the en and em dash, the curly single and double quotes,
+      # the low quote and the guillemets. pygrep matches bytes, so the pattern
+      # spells them in UTF-8; a comment line starts with #, and an editor drops it.
+      - id: message-without-dashes-or-curly-quotes
+        name: no dash or curly quote in the message
+        entry: '^(?!#).*(?:\xe2\x80[\x93\x94\x98\x99\x9c\x9d\x9e]|\xc2[\xab\xbb])'
         language: pygrep
         stages: [commit-msg]
