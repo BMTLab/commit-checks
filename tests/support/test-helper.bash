@@ -1,7 +1,10 @@
 # shellcheck shell=bash
+# shellcheck disable=SC2034 # The tests read the paths and the names that this module sets.
 
 # Give the tests of commit-checks a scratch home, a throwaway repository and the script to run.
 #
+# Every test file sources it under a `# shellcheck source=` line, rather than with `load`,
+# so that ShellCheck follows it and sees what it sets.
 # Each test runs in a home of its own, so git reads no file of the user,
 # such as the ~/.config/git/ignore that it reads even without a global config.
 # The repository has a git config of its own, so the config of the machine changes nothing.
@@ -9,7 +12,15 @@
 # as the git config of a committer may: git then still reads a block of trailers
 # that holds one broken line, and drops that line alone.
 
-COMMIT_CHECKS="${BATS_TEST_DIRNAME}/../../commit-checks.py"
+# region Paths
+
+PROJECT_ROOT="$(readlink -f -- "${BASH_SOURCE[0]%/*}/../..")"
+readonly PROJECT_ROOT
+readonly COMMIT_CHECKS="${PROJECT_ROOT}/commit-checks.py"
+
+# endregion Paths
+
+# region Exit codes
 
 #######################################
 # Read the exit codes of commit-checks.py into readonly variables of the same names,
@@ -50,6 +61,10 @@ function read_exit_codes() {
 
 read_exit_codes
 
+# endregion Exit codes
+
+# region Sandbox
+
 #######################################
 # Give the test a home, the folders of XDG, a TMPDIR and a folder of stand-ins
 # of its own, so that no test reaches a file of the user.
@@ -81,6 +96,10 @@ function sandbox_setup() {
   mkdir -p -- "${FAKE_HOME}" "${FAKE_BIN}"
   mkdir -m 0700 -- "${XDG_RUNTIME_DIR}"
 }
+
+# endregion Sandbox
+
+# region Repository
 
 #######################################
 # Make an empty repository in BATS_TEST_TMPDIR and enter it.
@@ -118,8 +137,13 @@ function commit_files() {
     git add -- "$1"
     shift 2
   done
+
   git commit -q -m 'Start the history of the test'
 }
+
+# endregion Repository
+
+# region Messages
 
 #######################################
 # Write a commit message into a file of BATS_TEST_TMPDIR.
@@ -153,5 +177,7 @@ function repeat_character() {
   printf -v spaces '%*s' "$2" ''
   printf '%s\n' "${spaces// /"$1"}"
 }
+
+# endregion Messages
 
 ### End

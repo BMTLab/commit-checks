@@ -1,17 +1,26 @@
 #!/usr/bin/env bats
+# shellcheck shell=bash
 
 # Test commit-checks in throwaway repositories, as the git hooks of pre-commit run it.
 
 bats_require_minimum_version 1.11.0
 
-load '../support/test-helper'
+# shellcheck source=../support/test-helper.bash
+source "${BATS_TEST_DIRNAME}/../support/test-helper.bash"
 
+# region Setup
+
+#######################################
+# Give the test a scratch home and an empty repository, and enter the repository.
+#######################################
 function setup() {
   sandbox_setup
   make_repository
   # A misspelled name, such as that of an exit code, fails the test.
   set -o nounset
 }
+
+# endregion Setup
 
 # region Sandbox
 
@@ -33,6 +42,7 @@ function setup() {
 @test "a message whose trailers git parses passes" {
   # Arrange
   local message
+
   message="$(write_message 'Fix the parser' '' 'Why: the parser lost a line' \
     '  at the end of a file.' 'Verified: make check.' 'Co-Authored-By: A <a@example.com>')"
 
@@ -47,6 +57,7 @@ function setup() {
 @test "a continuation without its indent fails, and names the line" {
   # Arrange
   local message
+
   message="$(write_message 'Fix the parser' '' 'Why: the parser lost a line' \
     'at the end of a file.' 'Verified: make check.')"
 
@@ -61,6 +72,7 @@ function setup() {
 @test "a key of two words fails, and names the line" {
   # Arrange
   local message
+
   message="$(write_message 'Fix the parser' '' 'Why: a reason.' 'Tested on: Ubuntu.' \
     'Verified: make check.')"
 
@@ -75,6 +87,7 @@ function setup() {
 @test "a blank line inside the trailers fails" {
   # Arrange
   local message
+
   message="$(write_message 'Fix the parser' '' 'Why: a reason.' '' 'Verified: make check.')"
 
   # Act
@@ -88,6 +101,7 @@ function setup() {
 @test "a subject alone passes" {
   # Arrange
   local message
+
   message="$(write_message 'Fix a typo in the README')"
 
   # Act
@@ -100,6 +114,7 @@ function setup() {
 @test "prose with a colon in its last paragraph passes" {
   # Arrange
   local message
+
   message="$(write_message 'Fix the parser' '' 'The parser read one line too few,' \
     'so the last one went missing.' 'Note: the old files read fine.')"
 
@@ -113,6 +128,7 @@ function setup() {
 @test "comments and the diff of --verbose stay out of the check" {
   # Arrange
   local message
+
   message="$(write_message 'Fix the parser' '' 'Why: a reason.' \
     '# Please enter the commit message for your changes.' \
     '# ------------------------ >8 ------------------------' 'Broken: line' 'not a trailer')"
@@ -127,6 +143,7 @@ function setup() {
 @test "the status that git writes under the message in an editor stays out of the check" {
   # Arrange
   local message
+
   # git writes each file of the status as # and a tab, without a space.
   message="$(write_message 'Fix the parser' '' 'Why: a reason.' 'Verified: make check.' '' \
     '# Please enter the commit message for your changes.' '#' \
@@ -138,15 +155,6 @@ function setup() {
   # Assert
   ((status == 0))
   [[ -z "${output}" ]]
-}
-
-@test "trailers without a file ends with CC_ERR_USAGE" {
-  # Act
-  run --separate-stderr "${COMMIT_CHECKS}" trailers
-
-  # Assert
-  ((status == CC_ERR_USAGE))
-  [[ "${stderr}" == *'trailers takes one file'* ]]
 }
 
 # endregion Trailers
@@ -162,6 +170,7 @@ function setup() {
 function a_line_of_72_characters_passes() {
   # Arrange
   local line message
+
   line="$(repeat_character "$1" 72)"
   message="$(write_message 'Fix the parser' '' "${line}")"
 
@@ -182,6 +191,7 @@ function a_line_of_72_characters_passes() {
 function a_line_of_73_characters_fails() {
   # Arrange
   local line message
+
   line="$(repeat_character "$1" 73)"
   message="$(write_message 'Fix the parser' '' "${line}")"
 
@@ -206,6 +216,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
 @test "a subject of 73 characters fails" {
   # Arrange
   local subject message
+
   subject="$(repeat_character 'A' 73)"
   message="$(write_message "${subject}")"
 
@@ -220,6 +231,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
 @test "each line past the limit is named by its number" {
   # Arrange
   local line message
+
   line="$(repeat_character 'a' 80)"
   message="$(write_message 'Fix the parser' '' "${line}" 'A short line.' "${line}")"
 
@@ -234,6 +246,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
 @test "a line that holds a URL may run past the limit" {
   # Arrange
   local url message
+
   url='https://github.com/BMTLab/commit-checks/blob/main/README.md#how-it-works-in-full'
   message="$(write_message 'Fix the parser' '' 'Why: the parser lost a line.' "See: ${url}")"
 
@@ -247,6 +260,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
 @test "the spaces at the end of a line do not count, since git drops them" {
   # Arrange
   local line message
+
   line="$(repeat_character 'a' 72)"
   message="$(write_message 'Fix the parser' '' "${line}   ")"
 
@@ -260,6 +274,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
 @test "comments, the status of git and the diff of --verbose stay out of the length check" {
   # Arrange
   local long_text message
+
   long_text="$(repeat_character 'a' 80)"
   message="$(write_message 'Fix the parser' '' "# ${long_text}" $'#\trenamed:    '"${long_text}" \
     '# ------------------------ >8 ------------------------' "+${long_text}")"
@@ -269,15 +284,6 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
 
   # Assert
   ((status == 0))
-}
-
-@test "line-length without a file ends with CC_ERR_USAGE" {
-  # Act
-  run --separate-stderr "${COMMIT_CHECKS}" line-length
-
-  # Assert
-  ((status == CC_ERR_USAGE))
-  [[ "${stderr}" == *'line-length takes one file'* ]]
 }
 
 # endregion Line length
@@ -374,14 +380,6 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   ((status == 0))
 }
 
-@test "--exclude without a glob ends with CC_ERR_USAGE" {
-  # Act
-  run --separate-stderr "${COMMIT_CHECKS}" references --exclude
-
-  # Assert
-  ((status == CC_ERR_USAGE))
-}
-
 # endregion References
 
 # region Temporary and untracked files
@@ -395,6 +393,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
 function a_temporary_file_fails() {
   # Arrange
   local -r name="$1"
+
   commit_files 'README.md' 'Readme.'
   printf 'left behind\n' >"${name}"
   git add -f -- "${name}"
@@ -453,16 +452,36 @@ done
 
 # endregion Temporary and untracked files
 
-# region Command line
+# region Error model
 
-@test "an unknown command ends with CC_ERR_USAGE" {
+#######################################
+# Check that a wrong command line ends with CC_ERR_USAGE, and says what is wrong.
+#
+# Arguments:
+#   1: A part of the message on stderr.
+#   2...: The command line.
+#######################################
+function a_wrong_command_line_ends_with_usage() {
+  # Arrange
+  local -r expected="$1"
+  local -ar command_line=("${@:2}")
+
   # Act
-  run --separate-stderr "${COMMIT_CHECKS}" lint
+  run --separate-stderr "${COMMIT_CHECKS}" "${command_line[@]}"
 
   # Assert
   ((status == CC_ERR_USAGE))
-  [[ "${stderr}" == *'unknown command: lint'* ]]
+  [[ "${stderr}" == *"${expected}"* ]]
 }
+
+bats_test_function --description 'an unknown command ends with CC_ERR_USAGE' \
+  -- a_wrong_command_line_ends_with_usage 'unknown command: lint' lint
+bats_test_function --description 'trailers without a file ends with CC_ERR_USAGE' \
+  -- a_wrong_command_line_ends_with_usage 'trailers takes one file' trailers
+bats_test_function --description 'line-length without a file ends with CC_ERR_USAGE' \
+  -- a_wrong_command_line_ends_with_usage 'line-length takes one file' line-length
+bats_test_function --description '--exclude without a glob ends with CC_ERR_USAGE' \
+  -- a_wrong_command_line_ends_with_usage '--exclude needs a glob' references --exclude
 
 @test "outside a repository, a check ends with CC_ERR_GIT" {
   # Arrange
@@ -481,6 +500,7 @@ done
   # Arrange
   local name value help_text
   local -a violations=()
+
   help_text="$("${COMMIT_CHECKS}" --help)"
 
   # Act
@@ -492,7 +512,7 @@ done
     if [[ "${help_text}" != *"${value}  ${name}:"* ]]; then
       violations+=("${name}: missing from --help")
     fi
-    if ! grep -qE "^\| +\`${value}\` +\| +\`${name}\` +\|" "${BATS_TEST_DIRNAME}/../../README.md"; then
+    if ! grep -qE "^\| +\`${value}\` +\| +\`${name}\` +\|" "${PROJECT_ROOT}/README.md"; then
       violations+=("${name}: missing from the table of README.md")
     fi
   done
@@ -500,10 +520,11 @@ done
   # Assert
   if ((${#violations[@]} > 0)); then
     printf '%s\n' "${violations[@]}" >&2
+
     return 1
   fi
 }
 
-# endregion Command line
+# endregion Error model
 
 ### End
