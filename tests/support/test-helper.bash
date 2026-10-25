@@ -12,17 +12,43 @@
 COMMIT_CHECKS="${BATS_TEST_DIRNAME}/../../commit-checks.py"
 
 #######################################
-# Read the value of an exit code from the constants of commit-checks.py.
+# Read the exit codes of commit-checks.py into readonly variables of the same names,
+# such as CC_ERR_USAGE, so that a test compares a status as ((status == CC_ERR_USAGE)).
+# A test file turns on nounset, so a misspelled name fails the test.
 #
-# Arguments:
-#   1: The name of the code, such as CC_ERR_USAGE.
+# Globals:
+#   COMMIT_CHECKS: The script.
+#   EXIT_CODE_NAMES: Set to the names of the codes, in the order of the script.
+#   CC_ERR_*: Set, one readonly variable for each code.
 #
-# Outputs:
-#   The number, to stdout.
+# Returns:
+#   1 when the script holds no code, or a code without a number.
 #######################################
-function exit_code() {
-  sed -n "s/^$1: Final = //p" "${COMMIT_CHECKS}"
+function read_exit_codes() {
+  local codes name value
+  local -a names=()
+
+  codes="$(sed -n 's/^\(CC_ERR_[A-Z_]*\): Final = \(.*\)$/\1 \2/p' "${COMMIT_CHECKS}")"
+  if [[ -z "${codes}" ]]; then
+    printf 'test-helper: found no exit code in %s\n' "${COMMIT_CHECKS}" >&2
+
+    return 1
+  fi
+
+  while IFS=' ' read -r name value; do
+    if [[ ! "${value}" =~ ^[0-9]+$ ]]; then
+      printf 'test-helper: the exit code %s is no number: %s\n' "${name}" "${value}" >&2
+
+      return 1
+    fi
+    declare -gr "${name}=${value}"
+    names+=("${name}")
+  done <<<"${codes}"
+
+  declare -gra EXIT_CODE_NAMES=("${names[@]}")
 }
+
+read_exit_codes
 
 #######################################
 # Give the test a home, the folders of XDG, a TMPDIR and a folder of stand-ins

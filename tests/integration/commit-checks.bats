@@ -9,6 +9,8 @@ load '../support/test-helper'
 function setup() {
   sandbox_setup
   make_repository
+  # A misspelled name, such as that of an exit code, fails the test.
+  set -o nounset
 }
 
 # region Sandbox
@@ -20,7 +22,7 @@ function setup() {
   run --separate-stderr printenv HOME XDG_CONFIG_HOME
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
   [[ "${output}" == "${BATS_TEST_TMPDIR}/home"$'\n'"${BATS_TEST_TMPDIR}/home/.config" ]]
 }
 
@@ -38,7 +40,7 @@ function setup() {
   run --separate-stderr "${COMMIT_CHECKS}" trailers "${message}"
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
   [[ -z "${output}" ]]
 }
 
@@ -52,7 +54,7 @@ function setup() {
   run --separate-stderr "${COMMIT_CHECKS}" trailers "${message}"
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_TRAILERS)" ]]
+  ((status == CC_ERR_TRAILERS))
   [[ "${output}" == 'git takes this line for no trailer: at the end of a file.' ]]
 }
 
@@ -66,7 +68,7 @@ function setup() {
   run --separate-stderr "${COMMIT_CHECKS}" trailers "${message}"
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_TRAILERS)" ]]
+  ((status == CC_ERR_TRAILERS))
   [[ "${output}" == 'git takes this line for no trailer: Tested on: Ubuntu.' ]]
 }
 
@@ -79,7 +81,7 @@ function setup() {
   run --separate-stderr "${COMMIT_CHECKS}" trailers "${message}"
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_TRAILERS)" ]]
+  ((status == CC_ERR_TRAILERS))
   [[ "${output}" == *'a blank line parts this trailer from the last paragraph: Why: a reason.'* ]]
 }
 
@@ -92,7 +94,7 @@ function setup() {
   run --separate-stderr "${COMMIT_CHECKS}" trailers "${message}"
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
 }
 
 @test "prose with a colon in its last paragraph passes" {
@@ -105,7 +107,7 @@ function setup() {
   run --separate-stderr "${COMMIT_CHECKS}" trailers "${message}"
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
 }
 
 @test "comments and the diff of --verbose stay out of the check" {
@@ -119,7 +121,7 @@ function setup() {
   run --separate-stderr "${COMMIT_CHECKS}" trailers "${message}"
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
 }
 
 @test "the status that git writes under the message in an editor stays out of the check" {
@@ -134,7 +136,7 @@ function setup() {
   run --separate-stderr "${COMMIT_CHECKS}" trailers "${message}"
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
   [[ -z "${output}" ]]
 }
 
@@ -143,7 +145,7 @@ function setup() {
   run --separate-stderr "${COMMIT_CHECKS}" trailers
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_USAGE)" ]]
+  ((status == CC_ERR_USAGE))
   [[ "${stderr}" == *'trailers takes one file'* ]]
 }
 
@@ -167,7 +169,7 @@ function a_line_of_72_characters_passes() {
   run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
   [[ -z "${output}" ]]
 }
 
@@ -187,7 +189,7 @@ function a_line_of_73_characters_fails() {
   run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_LINE_LENGTH)" ]]
+  ((status == CC_ERR_LINE_LENGTH))
   [[ "${output}" == "line 3 has 73 characters: ${line}" ]]
 }
 
@@ -211,7 +213,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_LINE_LENGTH)" ]]
+  ((status == CC_ERR_LINE_LENGTH))
   [[ "${output}" == "line 1 has 73 characters: ${subject}" ]]
 }
 
@@ -225,7 +227,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_LINE_LENGTH)" ]]
+  ((status == CC_ERR_LINE_LENGTH))
   [[ "${output}" == "line 3 has 80 characters: ${line}"$'\n'"line 5 has 80 characters: ${line}" ]]
 }
 
@@ -239,7 +241,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
 }
 
 @test "the spaces at the end of a line do not count, since git drops them" {
@@ -252,7 +254,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
 }
 
 @test "comments, the status of git and the diff of --verbose stay out of the length check" {
@@ -266,7 +268,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
 }
 
 @test "line-length without a file ends with CC_ERR_USAGE" {
@@ -274,7 +276,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   run --separate-stderr "${COMMIT_CHECKS}" line-length
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_USAGE)" ]]
+  ((status == CC_ERR_USAGE))
   [[ "${stderr}" == *'line-length takes one file'* ]]
 }
 
@@ -291,7 +293,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   run --separate-stderr "${COMMIT_CHECKS}" references
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_REFERENCES)" ]]
+  ((status == CC_ERR_REFERENCES))
   [[ "${output}" == 'README.md:3: names rules/agents.md, which this commit renames to rules/environment.md' ]]
 }
 
@@ -304,7 +306,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   run --separate-stderr "${COMMIT_CHECKS}" references
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_REFERENCES)" ]]
+  ((status == CC_ERR_REFERENCES))
   [[ "${output}" == 'README.md:1: names old.md, which this commit deletes' ]]
 }
 
@@ -318,7 +320,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   run --separate-stderr "${COMMIT_CHECKS}" references
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
   [[ -z "${output}" ]]
 }
 
@@ -332,7 +334,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   run --separate-stderr "${COMMIT_CHECKS}" references
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_REFERENCES)" ]]
+  ((status == CC_ERR_REFERENCES))
   [[ "${output}" == 'README.md:1: names sub/README.md, which this commit deletes' ]]
 }
 
@@ -345,7 +347,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   run --separate-stderr "${COMMIT_CHECKS}" references
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
 }
 
 @test "CHANGELOG.md may name the old path" {
@@ -357,7 +359,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   run --separate-stderr "${COMMIT_CHECKS}" references
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
 }
 
 @test "--exclude leaves a file out of the search" {
@@ -369,7 +371,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   run --separate-stderr "${COMMIT_CHECKS}" references --exclude 'docs/*.md'
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
 }
 
 @test "--exclude without a glob ends with CC_ERR_USAGE" {
@@ -377,7 +379,7 @@ bats_test_function --description 'a line of 73 Cyrillic letters fails, and names
   run --separate-stderr "${COMMIT_CHECKS}" references --exclude
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_USAGE)" ]]
+  ((status == CC_ERR_USAGE))
 }
 
 # endregion References
@@ -401,7 +403,7 @@ function a_temporary_file_fails() {
   run --separate-stderr "${COMMIT_CHECKS}" temporary
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_TEMPORARY)" ]]
+  ((status == CC_ERR_TEMPORARY))
   [[ "${output}" == "${name}" ]]
 }
 
@@ -420,7 +422,7 @@ done
   run --separate-stderr "${COMMIT_CHECKS}" temporary
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
 }
 
 @test "untracked lists the files that the commit leaves out, and passes" {
@@ -432,7 +434,7 @@ done
   run --separate-stderr "${COMMIT_CHECKS}" untracked
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
   [[ "${output}" == 'draft.md' ]]
 }
 
@@ -445,7 +447,7 @@ done
   run --separate-stderr "${COMMIT_CHECKS}" untracked
 
   # Assert
-  [[ "${status}" -eq 0 ]]
+  ((status == 0))
   [[ -z "${output}" ]]
 }
 
@@ -458,7 +460,7 @@ done
   run --separate-stderr "${COMMIT_CHECKS}" lint
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_USAGE)" ]]
+  ((status == CC_ERR_USAGE))
   [[ "${stderr}" == *'unknown command: lint'* ]]
 }
 
@@ -471,7 +473,7 @@ done
   run --separate-stderr "${COMMIT_CHECKS}" untracked
 
   # Assert
-  [[ "${status}" -eq "$(exit_code CC_ERR_GIT)" ]]
+  ((status == CC_ERR_GIT))
   [[ "${stderr}" == *'run commit-checks inside a git repository'* ]]
 }
 
@@ -482,7 +484,8 @@ done
   help_text="$("${COMMIT_CHECKS}" --help)"
 
   # Act
-  while IFS=' ' read -r name value; do
+  for name in "${EXIT_CODE_NAMES[@]}"; do
+    value="${!name}"
     if ! grep -qE "^  ${value} ${name}[,.]$" "${COMMIT_CHECKS}"; then
       violations+=("${name}: missing from the card")
     fi
@@ -492,7 +495,7 @@ done
     if ! grep -qE "^\| +\`${value}\` +\| +\`${name}\` +\|" "${BATS_TEST_DIRNAME}/../../README.md"; then
       violations+=("${name}: missing from the table of README.md")
     fi
-  done < <(sed -n 's/^\(CC_ERR_[A-Z_]*\): Final = \([0-9]*\)$/\1 \2/p' "${COMMIT_CHECKS}")
+  done
 
   # Assert
   if ((${#violations[@]} > 0)); then
