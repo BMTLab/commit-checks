@@ -100,6 +100,11 @@ NAME_AFTER: Final = "([^[:alnum:]_-]|$)"
 # The characters that the extended regular expressions of git grep take as special.
 ERE_SPECIAL_PATTERN: Final = re.compile(r"([.\[\]()*+?{}|^$\\])")
 
+# What to do next when git fails, by the kind of the failure.
+NEXT_STEP_NO_GIT: Final = "install git, or put it on PATH"
+NEXT_STEP_GIT_HANGS: Final = "end the other git of this repository, then try again"
+NEXT_STEP_GIT_FAILS: Final = "run commit-checks inside a git repository, or fix what git says"
+
 # The untracked files that untracked lists before it counts the rest.
 UNTRACKED_SHOWN: Final = 20
 
@@ -141,7 +146,20 @@ class UsageError(Exception):
 
 
 class GitError(Exception):
-    """A git command that failed, with the words git printed."""
+    """A git command that failed, with the words git printed and what to do next."""
+
+    def __init__(self, message: str, next_step: str) -> None:
+        """Keep the words of the failure and the next step.
+
+        Parameters
+        ----------
+        message
+            What went wrong, such as the words that git printed.
+        next_step
+            What the user does next, such as ``install git, or put it on PATH``.
+        """
+        super().__init__(message)
+        self.next_step = next_step
 
 
 # endregion Errors
@@ -175,7 +193,7 @@ def run_git(arguments: Sequence[str], stdin: bytes = b"", accepted: int = 0) -> 
     if executable is None:
         message = "git is not on PATH"
 
-        raise GitError(message)
+        raise GitError(message, NEXT_STEP_NO_GIT)
 
     try:
         # git runs by its full path, with an argv list.
@@ -189,13 +207,13 @@ def run_git(arguments: Sequence[str], stdin: bytes = b"", accepted: int = 0) -> 
     except subprocess.TimeoutExpired as error:
         message = f"git {arguments[0]} took longer than {GIT_TIMEOUT_SECONDS} seconds"
 
-        raise GitError(message) from error
+        raise GitError(message, NEXT_STEP_GIT_HANGS) from error
 
     if completed.returncode not in {0, accepted}:
         words = completed.stderr.decode("utf-8", errors="replace").strip()
         message = words or f"git {arguments[0]} ended with {completed.returncode}"
 
-        raise GitError(message)
+        raise GitError(message, NEXT_STEP_GIT_FAILS)
 
     return completed.stdout
 
@@ -1026,7 +1044,7 @@ def main(arguments: Sequence[str]) -> int:
 
         return CC_ERR_USAGE
     except GitError as error:
-        report(f"git failed: {error}", "run commit-checks inside a git repository")
+        report(f"git failed: {error}", error.next_step)
 
         return CC_ERR_GIT
 

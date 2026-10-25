@@ -609,6 +609,21 @@ bats_test_function --description '--exclude without a glob ends with CC_ERR_USAG
   [[ "${stderr}" == *'run commit-checks inside a git repository'* ]]
 }
 
+@test "without git on PATH, a check ends with CC_ERR_GIT and says to install git" {
+  # Arrange
+  local python_path
+
+  python_path="$(command -v python3)"
+  ln -s -- "${python_path}" "${FAKE_BIN}/python3"
+
+  # Act
+  run --separate-stderr env PATH="${FAKE_BIN}" "${COMMIT_CHECKS}" untracked
+
+  # Assert
+  ((status == CC_ERR_GIT))
+  [[ "${stderr}" == $'commit-checks: git failed: git is not on PATH\ncommit-checks: install git, or put it on PATH' ]]
+}
+
 @test "every exit code stands in the card, the help and the README" {
   # Arrange
   local name value help_text

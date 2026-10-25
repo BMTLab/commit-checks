@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning][semver].
 - The hooks took `#` for the comment character
   even where `core.commentChar` or `core.commentString` names another one.
   Now they read it from the git config.
+- A check said to run commit-checks inside a git repository
+  also when git was missing or hung.
+  Now each failure of git names its own next step.
 
 ## [1.1.0] - 2026-10-25
 
