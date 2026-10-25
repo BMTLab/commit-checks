@@ -11,8 +11,9 @@ in the repositories that take its hooks.
 - `commit-checks.py`: the one script, in regions: Constants, Errors, git,
   Message, Trailers, Line length, References, Index and Commands.
 - `.pre-commit-hooks.yaml`: the hooks that a repository takes by their ids.
-- `tests/integration/commit-checks.bats`: the tests, in throwaway repositories;
-  `tests/support/test-helper.bash` makes them.
+- `tests/integration/commit-checks.bats`: the tests of the script,
+  in throwaway repositories that `tests/support/test-helper.bash` makes.
+- `tests/unit/`: the tests of its functions, under pytest and hypothesis.
 - `pyproject.toml`, `uv.lock`, `.python-version`: the tools of `make check`
   and of the hooks, their settings and their versions; there is no package.
 - `Makefile`: every task; `make help` lists them.
@@ -63,6 +64,9 @@ A new code takes the next free ten.
 
 - One rule per test, named as a sentence,
   in the sections Arrange, Act and Assert.
+- A rule that holds for every input,
+  such as how the lines of a message are kept,
+  gets a property test of hypothesis in `tests/unit`.
 - Each test makes its repository under `BATS_TEST_TMPDIR`,
   with a git config of its own, so the config of the machine changes nothing.
 

@@ -538,6 +538,27 @@ def check_trailers(message: Path) -> list[str]:
 # region Line length
 
 
+def long_lines(lines: Sequence[tuple[int, str]]) -> list[str]:
+    """Find the lines that are longer than LINE_LENGTH_LIMIT characters and hold no URL.
+
+    Parameters
+    ----------
+    lines
+        The number of each line in the file of the message, and the line.
+
+    Returns
+    -------
+    list[str]
+        One finding per line, with its number and its length.
+    """
+    # len counts characters, so a letter of two or more bytes in UTF-8 counts once.
+    return [
+        f"line {number} has {len(line)} characters: {line}"
+        for number, line in lines
+        if len(line) > LINE_LENGTH_LIMIT and not URL_PATTERN.search(line)
+    ]
+
+
 def check_line_length(message: Path) -> list[str]:
     """Find the lines of a message that are longer than LINE_LENGTH_LIMIT characters.
 
@@ -551,15 +572,7 @@ def check_line_length(message: Path) -> list[str]:
     list[str]
         One finding per line, with its number in the file.
     """
-    text = read_message(message)
-    comments = comments_of_commit()
-
-    # len counts characters, so a letter of two or more bytes in UTF-8 counts once.
-    return [
-        f"line {number} has {len(line)} characters: {line}"
-        for number, line in message_lines(text, comments)
-        if len(line) > LINE_LENGTH_LIMIT and not URL_PATTERN.search(line)
-    ]
+    return long_lines(message_lines(read_message(message), comments_of_commit()))
 
 
 # endregion Line length

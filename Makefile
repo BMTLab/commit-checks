@@ -20,6 +20,7 @@ MYPY ?= $(UV) run --locked --quiet mypy
 SHELLCHECK ?= $(UV) run --locked --quiet shellcheck
 SHFMT ?= $(UV) run --locked --quiet shfmt
 RUMDL ?= $(UV) run --locked --quiet rumdl
+PYTEST ?= $(UV) run --locked --quiet pytest
 PRE_COMMIT ?= $(UV) run --locked --quiet pre-commit
 
 SHELL_FILES := tests/support/test-helper.bash
@@ -42,7 +43,7 @@ lint: lint-python lint-shell lint-md ## Run every linter
 
 lint-python: ## ruff and mypy, as pyproject.toml sets them
 	$(RUFF) check .
-	$(MYPY) $(SCRIPT)
+	$(MYPY) $(SCRIPT) tests/unit
 
 lint-shell: ## shellcheck, on the tests
 	$(SHELLCHECK) $(SHELL_FILES) $(BATS_FILES)
@@ -58,7 +59,12 @@ format-check: ## Check the format of the Python and the shell code
 	$(RUFF) format --check .
 	$(SHFMT) -d $(SHELL_FILES) $(BATS_FILES)
 
-test: ## Run every test
+test: test-unit test-integration ## Run every test
+
+test-unit: ## Run the unit tests of the functions, under pytest and hypothesis
+	$(PYTEST)
+
+test-integration: ## Run the script in throwaway repositories, under bats
 	bats $(BATS_JOBS) $(BATS_FILES)
 
 test-floor: ## Run every test with python3 as the oldest Python that the hooks support
@@ -88,4 +94,4 @@ uninstall: ## Remove the link that install made
 hooks: ## Install the git hooks of .pre-commit-config.yaml, for commits and their messages
 	$(PRE_COMMIT) install --install-hooks
 
-.PHONY: help lint lint-python lint-shell lint-md format format-check test test-floor check install uninstall hooks
+.PHONY: help lint lint-python lint-shell lint-md format format-check test test-unit test-integration test-floor check install uninstall hooks

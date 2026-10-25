@@ -130,8 +130,9 @@ make check    # ruff, mypy, shellcheck, rumdl, the formats and the tests
 make hooks    # installs the git hooks of this repository, once per clone
 ```
 
-The tests run the script in throwaway repositories under `BATS_TEST_TMPDIR`,
-with a git config of their own.
+The unit tests check the functions of the script under pytest and hypothesis.
+The integration tests run the script in throwaway repositories
+under `BATS_TEST_TMPDIR`, with a git config of their own.
 `make check` runs them twice: with the `python3` of the machine,
 and through `make test-floor` with Python 3.10, which uv brings,
 since a hook runs under the `python3` of each machine that commits.

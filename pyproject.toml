@@ -13,8 +13,10 @@
 # There is no [project] table, since there is no package to build or install.
 [dependency-groups]
 dev = [
+  "hypothesis>=6.170.10",
   "mypy>=2.4.0",
   "pre-commit>=4.7.0",
+  "pytest>=9.1.1",
   "rumdl>=0.3.0",
   "ruff>=0.17.2",
   "shellcheck-py>=0.11.0.1",
@@ -50,12 +52,24 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # A script, not a package: a file name with hyphens, and no __init__.py.
 "commit-checks.py" = ["implicit-namespace-package", "invalid-module-name"]
+# The unit tests are no package, check with assert as pytest wants,
+# take the values of hypothesis by name, and test the numbers of the limits themselves.
+"tests/unit/*.py" = [
+  "implicit-namespace-package",
+  "assert",
+  "boolean-type-hint-positional-argument",
+  "magic-value-comparison",
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
 [tool.ruff.format]
 docstring-code-format = true
+
+[tool.pytest]
+testpaths = ["tests/unit"]
+strict = true
 
 [tool.mypy]
 python_version = "3.10"
