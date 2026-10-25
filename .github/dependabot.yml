@@ -4,7 +4,8 @@
 # of .pre-commit-config.yaml and the actions of .github/workflows.
 # The hooks and the actions are pinned to commits with the version in a comment,
 # and Dependabot moves both together, in one weekly pull request per kind.
-# A new release comes in at once, so there is no cooldown.
+# A new release comes in at once: since July 2026 Dependabot waits 3 days
+# when a block names no cooldown, so each block sets default-days to 0.
 # The commit messages keep the default "Bump ..." subject,
 # which meets the rules of committed.toml.
 
@@ -15,6 +16,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 0
     groups:
       uv:
         patterns:
@@ -24,6 +27,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 0
     groups:
       pre-commit:
         patterns:
@@ -33,6 +38,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 0
     groups:
       github-actions:
         patterns:
