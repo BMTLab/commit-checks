@@ -9,7 +9,7 @@
 # A subject of at most 72 columns (committed says 50),
 # and a body wrapped at 72, like the subject.
 # committed lets the last word of a line run over;
-# the hook subject-within-72-characters holds the subject to 72.
+# the hook line-length holds every line to 72.
 subject_length = 72
 line_length = 72
 

@@ -78,4 +78,21 @@ function write_message() {
   printf '%s\n' "${message}"
 }
 
+#######################################
+# Print one character over and over, as a line of a message.
+#
+# Arguments:
+#   1: The character, such as a or ж.
+#   2: How many times the line holds it.
+#
+# Outputs:
+#   The line, to stdout.
+#######################################
+function repeat_character() {
+  local spaces
+
+  printf -v spaces '%*s' "$2" ''
+  printf '%s\n' "${spaces// /"$1"}"
+}
+
 ### End

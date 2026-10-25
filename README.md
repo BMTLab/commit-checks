@@ -1,7 +1,7 @@
 # commit-checks
 
 The checks of git hooks that only a commit can make:
-the trailers of its message,
+the trailers of its message and the length of its lines,
 the references to the paths that it renames or deletes,
 and the files that it adds or leaves out.
 
@@ -11,6 +11,10 @@ and the files that it adds or leaves out.
   but that git does not parse, such as a key of two words,
   a continuation without its indent,
   or a blank line inside the block of trailers.
+- The commit-msg hook `line-length` finds each line of the message,
+  the subject too, that is longer than 72 characters;
+  only a line that holds a URL may run past.
+  It counts characters, not bytes, so a Cyrillic letter counts once.
 - The hook `references` finds each line of the index
   that still names a path that the commit renames or deletes,
   so a move leaves no stale reference behind;
@@ -39,6 +43,7 @@ repos:
     rev: v1.0.0
     hooks:
       - id: trailers
+      - id: line-length
       - id: references
       - id: temporary-files
       - id: untracked-files
@@ -57,6 +62,7 @@ and each one also runs by hand:
 
 ```bash
 commit-checks trailers .git/COMMIT_EDITMSG
+commit-checks line-length .git/COMMIT_EDITMSG
 commit-checks references --exclude 'docs/history/*.md'
 commit-checks temporary
 commit-checks untracked
@@ -66,6 +72,9 @@ commit-checks untracked
   is one that git parses, and no blank line parts the trailers.
   A paragraph of prose may hold a line such as `Note: x`:
   only a paragraph that is mostly trailers counts as the block of trailers.
+- `line-length FILE`: no line of the message in FILE,
+  the subject included, is longer than 72 characters.
+  A line that holds a URL, such as `See: https://...`, may run past.
 - `references [--exclude GLOB]...`: no file of the index names a path
   that the commit renames or deletes, by its path,
   or by its file name when no other file of the index has that name.
@@ -81,22 +90,25 @@ Each finding is a line on stdout, and the lines on stderr say what to do.
 
 ## Exit codes
 
-| Code | Name                | Meaning                                                  |
-| ---- | ------------------- | -------------------------------------------------------- |
-| `0`  | success             | no finding                                               |
-| `10` | `CC_ERR_USAGE`      | a wrong command line                                     |
-| `20` | `CC_ERR_TRAILERS`   | a line that looks like a trailer is none that git parses |
-| `30` | `CC_ERR_REFERENCES` | a file names a path that the commit renames or deletes   |
-| `40` | `CC_ERR_TEMPORARY`  | the commit adds a temporary file                         |
-| `50` | `CC_ERR_GIT`        | git failed, such as outside a repository                 |
+| Code | Name                 | Meaning                                                  |
+| ---- | -------------------- | -------------------------------------------------------- |
+| `0`  | success              | no finding                                               |
+| `10` | `CC_ERR_USAGE`       | a wrong command line                                     |
+| `20` | `CC_ERR_TRAILERS`    | a line that looks like a trailer is none that git parses |
+| `30` | `CC_ERR_REFERENCES`  | a file names a path that the commit renames or deletes   |
+| `40` | `CC_ERR_TEMPORARY`   | the commit adds a temporary file                         |
+| `50` | `CC_ERR_GIT`         | git failed, such as outside a repository                 |
+| `60` | `CC_ERR_LINE_LENGTH` | a line of the message is longer than 72 characters       |
 
 ## How it works
 
-`trailers` drops the comments of the message,
+`trailers` and `line-length` drop the comments of the message,
 the lines that start with `#`, as git does in an editor,
-and the diff of `git commit --verbose`,
-then compares the last paragraph with the trailers
-that `git interpret-trailers --parse` reads from it.
+and the diff of `git commit --verbose`.
+`trailers` then compares the last paragraph with the trailers
+that `git interpret-trailers --parse` reads from it,
+and `line-length` counts the characters of each line,
+without the spaces at its end, which git drops too.
 The other commands read the index, which holds what the commit adds:
 `git diff --cached` gives the renames and the deletions,
 and `git grep --cached` finds the old paths in the files that the commit keeps.

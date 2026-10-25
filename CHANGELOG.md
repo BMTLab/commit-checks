@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+### Added
+
+- The commit-msg hook `line-length` and the command `commit-checks line-length`:
+  no line of the message, the subject included, is longer than 72 characters,
+  and only a line that holds a URL may run past.
+  It counts characters, not bytes,
+  and skips the comments and the diff of `git commit --verbose`.
+
 ### Fixed
 
 - The hook `trailers` failed on a message with trailers

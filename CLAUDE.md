@@ -1,15 +1,15 @@
 # Working in this repository
 
 commit-checks gives git hooks the checks that only a commit can make:
-the trailers of the message, the references to the paths it moves,
-and the files it adds or leaves out.
+the trailers of the message and the length of its lines,
+the references to the paths it moves, and the files it adds or leaves out.
 pre-commit runs it from `.pre-commit-hooks.yaml`,
 in the repositories of the user.
 
 ## Map
 
-- `commit-checks.py`: the one script, in regions:
-  Constants, Errors, git, Trailers, References, Index and Commands.
+- `commit-checks.py`: the one script, in regions: Constants, Errors, git,
+  Message, Trailers, Line length, References, Index and Commands.
 - `.pre-commit-hooks.yaml`: the hooks that a repository takes by their ids.
 - `tests/commit-checks.bats`: the tests, in throwaway repositories;
   `tests/support/helpers.bash` makes them.
@@ -50,7 +50,7 @@ The README follows the standard of ScriptsLib.
 ## Exit codes
 
 The card, `--help` and the README list every code, and a test checks:
-10 for usage, then one code for each check, then 50 for git.
+10 for usage, 50 for git, and one code for each check in the other tens.
 A new code takes the next free ten.
 
 ## Tests

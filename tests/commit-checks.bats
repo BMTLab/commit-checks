@@ -133,6 +133,137 @@ function setup() {
 
 # endregion Trailers
 
+# region Line length
+
+#######################################
+# Check that a line of 72 characters passes, however many bytes they take.
+#
+# Arguments:
+#   1: The character that fills the line, such as a or ж.
+#######################################
+function a_line_of_72_characters_passes() {
+  # Arrange
+  local line message
+  line="$(repeat_character "$1" 72)"
+  message="$(write_message 'Fix the parser' '' "${line}")"
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
+
+  # Assert
+  [[ "${status}" -eq 0 ]]
+  [[ -z "${output}" ]]
+}
+
+#######################################
+# Check that a line of 73 characters fails, and that the finding names it.
+#
+# Arguments:
+#   1: The character that fills the line, such as a or ж.
+#######################################
+function a_line_of_73_characters_fails() {
+  # Arrange
+  local line message
+  line="$(repeat_character "$1" 73)"
+  message="$(write_message 'Fix the parser' '' "${line}")"
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
+
+  # Assert
+  [[ "${status}" -eq "$(exit_code CC_ERR_LINE_LENGTH)" ]]
+  [[ "${output}" == "line 3 has 73 characters: ${line}" ]]
+}
+
+# A Cyrillic letter takes two bytes in UTF-8, and still counts as one character.
+bats_test_function --description 'a line of 72 Latin letters passes' \
+  -- a_line_of_72_characters_passes 'a'
+bats_test_function --description 'a line of 72 Cyrillic letters passes' \
+  -- a_line_of_72_characters_passes 'ж'
+bats_test_function --description 'a line of 73 Latin letters fails, and names the line' \
+  -- a_line_of_73_characters_fails 'a'
+bats_test_function --description 'a line of 73 Cyrillic letters fails, and names the line' \
+  -- a_line_of_73_characters_fails 'ж'
+
+@test "a subject of 73 characters fails" {
+  # Arrange
+  local subject message
+  subject="$(repeat_character 'A' 73)"
+  message="$(write_message "${subject}")"
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
+
+  # Assert
+  [[ "${status}" -eq "$(exit_code CC_ERR_LINE_LENGTH)" ]]
+  [[ "${output}" == "line 1 has 73 characters: ${subject}" ]]
+}
+
+@test "each line past the limit is named by its number" {
+  # Arrange
+  local line message
+  line="$(repeat_character 'a' 80)"
+  message="$(write_message 'Fix the parser' '' "${line}" 'A short line.' "${line}")"
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
+
+  # Assert
+  [[ "${status}" -eq "$(exit_code CC_ERR_LINE_LENGTH)" ]]
+  [[ "${output}" == "line 3 has 80 characters: ${line}"$'\n'"line 5 has 80 characters: ${line}" ]]
+}
+
+@test "a line that holds a URL may run past the limit" {
+  # Arrange
+  local url message
+  url='https://github.com/BMTLab/commit-checks/blob/main/README.md#how-it-works-in-full'
+  message="$(write_message 'Fix the parser' '' 'Why: the parser lost a line.' "See: ${url}")"
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
+
+  # Assert
+  [[ "${status}" -eq 0 ]]
+}
+
+@test "the spaces at the end of a line do not count, since git drops them" {
+  # Arrange
+  local line message
+  line="$(repeat_character 'a' 72)"
+  message="$(write_message 'Fix the parser' '' "${line}   ")"
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
+
+  # Assert
+  [[ "${status}" -eq 0 ]]
+}
+
+@test "comments, the status of git and the diff of --verbose stay out of the length check" {
+  # Arrange
+  local long_text message
+  long_text="$(repeat_character 'a' 80)"
+  message="$(write_message 'Fix the parser' '' "# ${long_text}" $'#\trenamed:    '"${long_text}" \
+    '# ------------------------ >8 ------------------------' "+${long_text}")"
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
+
+  # Assert
+  [[ "${status}" -eq 0 ]]
+}
+
+@test "line-length without a file ends with CC_ERR_USAGE" {
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" line-length
+
+  # Assert
+  [[ "${status}" -eq "$(exit_code CC_ERR_USAGE)" ]]
+  [[ "${stderr}" == *'line-length takes one file'* ]]
+}
+
+# endregion Line length
+
 # region References
 
 @test "a reference to a renamed file fails, and names the file and the line" {

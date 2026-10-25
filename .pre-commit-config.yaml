@@ -47,6 +47,11 @@ repos:
         entry: ./commit-checks.py trailers
         language: script
         stages: [commit-msg]
+      - id: line-length
+        name: no line of the message over 72 characters
+        entry: ./commit-checks.py line-length
+        language: script
+        stages: [commit-msg]
       - id: references
         name: no file names a path that the commit moves or deletes
         entry: ./commit-checks.py references
@@ -83,16 +88,6 @@ repos:
                 | Bring | Ping | Ring | Sing | Spring | String | Swing | Wing
               ) \b )
           [A-Za-z]+ (?: ed | ing | [^aisu\W]s ) \b
-        language: pygrep
-        args: [--multiline]
-        stages: [commit-msg]
-
-      # The subject fits in 72 characters, its last word included:
-      # committed lets that word run over, as it would in the body.
-      # The pattern counts characters as UTF-8 sequences, not bytes.
-      - id: subject-within-72-characters
-        name: a subject of at most 72 characters
-        entry: '\A(?:[\x00-\x09\x0b-\x7f]|[\xc0-\xff][\x80-\xbf]*){73}'
         language: pygrep
         args: [--multiline]
         stages: [commit-msg]

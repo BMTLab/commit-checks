@@ -12,6 +12,13 @@
   language: script
   stages: [commit-msg]
 
+- id: line-length
+  name: no line of the message over 72 characters
+  description: No line of the message, the subject included, is longer than 72 characters; only a line with a URL may run past.
+  entry: commit-checks.py line-length
+  language: script
+  stages: [commit-msg]
+
 - id: references
   name: no file names a path that the commit moves or deletes
   description: No file of the index names a path that the commit renames or deletes.

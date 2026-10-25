@@ -11,12 +11,13 @@ Exit codes:
   20 CC_ERR_TRAILERS,
   30 CC_ERR_REFERENCES,
   40 CC_ERR_TEMPORARY,
-  50 CC_ERR_GIT.
+  50 CC_ERR_GIT,
+  60 CC_ERR_LINE_LENGTH.
 See: commit-checks --help, README.md, tests/.
 
 How it works:
   pre-commit runs each command from .pre-commit-hooks.yaml while git makes a commit:
-  trailers on the message, and the other commands on the index,
+  trailers and line-length on the message, and the other commands on the index,
   which holds what the commit adds to the history.
   Each finding is a line on stdout, and the last lines on stderr say what to do.
   A check that also holds for the working tree, such as a linter or a test,
@@ -51,6 +52,7 @@ CC_ERR_TRAILERS: Final = 20
 CC_ERR_REFERENCES: Final = 30
 CC_ERR_TEMPORARY: Final = 40
 CC_ERR_GIT: Final = 50
+CC_ERR_LINE_LENGTH: Final = 60
 
 # git grep ends with 1 when nothing matches, which is no failure.
 GIT_GREP_NO_MATCH: Final = 1
@@ -62,6 +64,11 @@ TRAILER_LINE: Final = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]*: \S")
 # git commit --verbose puts the diff below this line, and the message ends there.
 SCISSORS: Final = "------------------------ >8 ------------------------"
 COMMENT_CHARACTER: Final = "#"
+# The longest line of a message, in characters:
+# git log indents each line by four spaces, and 72 of them still fit in 80 columns.
+LINE_LENGTH_LIMIT: Final = 72
+# A URL cannot break, so a line that holds one may run past the limit.
+URL: Final = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://\S")
 
 # The files that editors, merge tools and patch leave behind.
 TEMPORARY_PATTERNS: Final = (
@@ -97,6 +104,8 @@ Check what nothing but a commit can show, for the git hooks of pre-commit.
 Commands:
   trailers FILE        Every trailer of the commit message in FILE is one that git parses,
                        and no blank line parts the trailers.
+  line-length FILE     No line of the commit message in FILE is longer than 72 characters;
+                       only a line that holds a URL may run past.
   references [--exclude GLOB]...
                        No file of the index names a path that the commit renames or deletes.
                        CHANGELOG.md may keep the old names; GLOB leaves out more files.
@@ -112,6 +121,7 @@ Exit codes:
   30  CC_ERR_REFERENCES: a file names a path that the commit renames or deletes
   40  CC_ERR_TEMPORARY: the commit adds a temporary file
   50  CC_ERR_GIT: git failed, such as outside a repository
+  60  CC_ERR_LINE_LENGTH: a line of the message is longer than 72 characters
 """
 
 # endregion Constants
@@ -198,7 +208,7 @@ def git_fields(arguments: Sequence[str]) -> list[str]:
 
 # endregion git
 
-# region Trailers
+# region Message
 
 
 def is_comment(line: str) -> bool:
@@ -219,6 +229,30 @@ def is_comment(line: str) -> bool:
     return line.startswith(COMMENT_CHARACTER)
 
 
+def message_lines(text: str) -> list[tuple[int, str]]:
+    """Return the lines of a message that git keeps, each with its number in the file.
+
+    Parameters
+    ----------
+    text
+        The message as the hook reads it, comments and the diff of --verbose included.
+
+    Returns
+    -------
+    list[tuple[int, str]]
+        The number of each line, from 1, and the line without the spaces at its end,
+        for every line above the diff that is no comment.
+    """
+    lines: list[tuple[int, str]] = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        if line == f"{COMMENT_CHARACTER} {SCISSORS}":
+            break
+        if not is_comment(line):
+            lines.append((number, line.rstrip()))
+
+    return lines
+
+
 def kept_lines(text: str) -> list[str]:
     """Return the lines of a message that git keeps.
 
@@ -232,17 +266,16 @@ def kept_lines(text: str) -> list[str]:
     list[str]
         The lines without comments, without the diff, and without blank lines at the end.
     """
-    lines: list[str] = []
-    for line in text.splitlines():
-        if line == f"{COMMENT_CHARACTER} {SCISSORS}":
-            break
-        if not is_comment(line):
-            lines.append(line.rstrip())
-
+    lines = [line for _, line in message_lines(text)]
     while lines and not lines[-1]:
         lines.pop()
 
     return lines
+
+
+# endregion Message
+
+# region Trailers
 
 
 def paragraphs(lines: Sequence[str]) -> list[list[str]]:
@@ -404,6 +437,34 @@ def check_trailers(message: Path) -> list[str]:
 
 
 # endregion Trailers
+
+# region Line length
+
+
+def check_line_length(message: Path) -> list[str]:
+    """Find the lines of a message that are longer than LINE_LENGTH_LIMIT characters.
+
+    Parameters
+    ----------
+    message
+        The file of the commit message, as the commit-msg hook gets it.
+
+    Returns
+    -------
+    list[str]
+        One finding per line, with its number in the file.
+    """
+    text = message.read_text(encoding="utf-8", errors="replace")
+
+    # len counts characters, so a letter of two or more bytes in UTF-8 counts once.
+    return [
+        f"line {number} has {len(line)} characters: {line}"
+        for number, line in message_lines(text)
+        if len(line) > LINE_LENGTH_LIMIT and not URL.search(line)
+    ]
+
+
+# endregion Line length
 
 # region References
 
@@ -670,6 +731,41 @@ def command_trailers(arguments: Sequence[str]) -> int:
     return CC_ERR_TRAILERS
 
 
+def command_line_length(arguments: Sequence[str]) -> int:
+    """Check the length of every line of the message in a file.
+
+    Parameters
+    ----------
+    arguments
+        The file of the message, alone.
+
+    Returns
+    -------
+    int
+        0, or CC_ERR_LINE_LENGTH when a finding comes up.
+
+    Raises
+    ------
+    UsageError
+        When the command line names no file, or more than one.
+    """
+    if len(arguments) != 1:
+        message = "line-length takes one file: the message of the commit"
+        raise UsageError(message)
+
+    findings = check_line_length(Path(arguments[0]))
+    if not findings:
+        return 0
+
+    write_lines(sys.stdout, findings)
+    report(
+        f"break each line at a pause, so that none is longer than {LINE_LENGTH_LIMIT} characters;",
+        "only a line that holds a URL may run past",
+    )
+
+    return CC_ERR_LINE_LENGTH
+
+
 def parse_excludes(arguments: Sequence[str]) -> list[str]:
     """Parse the options of the references command.
 
@@ -814,6 +910,7 @@ def main(arguments: Sequence[str]) -> int:
     """
     commands: dict[str, Callable[[Sequence[str]], int]] = {
         "trailers": command_trailers,
+        "line-length": command_line_length,
         "references": command_references,
         "temporary": command_temporary,
         "untracked": command_untracked,
