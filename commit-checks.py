@@ -33,7 +33,7 @@ from __future__ import annotations
 import fnmatch
 import re
 import shutil
-import subprocess  # ruff: ignore[suspicious-subprocess-import] - git is the point
+import subprocess  # ruff: ignore[suspicious-subprocess-import], git is the point
 import sys
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -60,7 +60,7 @@ GIT_GREP_NO_MATCH: Final = 1
 GIT_TIMEOUT_SECONDS: Final = 60
 
 # A trailer opens with a token, a colon and a space, as git reads it by default.
-TRAILER_LINE: Final = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]*: \S")
+TRAILER_LINE_PATTERN: Final = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]*: \S")
 # git commit --verbose puts the diff below this line, and the message ends there.
 SCISSORS: Final = "------------------------ >8 ------------------------"
 COMMENT_CHARACTER: Final = "#"
@@ -68,7 +68,7 @@ COMMENT_CHARACTER: Final = "#"
 # git log indents each line by four spaces, and 72 of them still fit in 80 columns.
 LINE_LENGTH_LIMIT: Final = 72
 # A URL cannot break, so a line that holds one may run past the limit.
-URL: Final = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://\S")
+URL_PATTERN: Final = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://\S")
 
 # The files that editors, merge tools and patch leave behind.
 TEMPORARY_PATTERNS: Final = (
@@ -91,12 +91,12 @@ REFERENCE_EXCLUDES: Final = ("**/CHANGELOG.md",)
 NAME_BEFORE: Final = "(^|[^[:alnum:]_.-])"
 NAME_AFTER: Final = "([^[:alnum:]_-]|$)"
 # The characters that the extended regular expressions of git grep take as special.
-ERE_SPECIAL: Final = re.compile(r"([.\[\]()*+?{}|^$\\])")
+ERE_SPECIAL_PATTERN: Final = re.compile(r"([.\[\]()*+?{}|^$\\])")
 
 # The untracked files that untracked lists before it counts the rest.
 UNTRACKED_SHOWN: Final = 20
 
-HELP: Final = """\
+HELP: Final = f"""\
 Usage: commit-checks COMMAND [ARGUMENT...]
 
 Check what nothing but a commit can show, for the git hooks of pre-commit.
@@ -104,8 +104,8 @@ Check what nothing but a commit can show, for the git hooks of pre-commit.
 Commands:
   trailers FILE        Every trailer of the commit message in FILE is one that git parses,
                        and no blank line parts the trailers.
-  line-length FILE     No line of the commit message in FILE is longer than 72 characters;
-                       only a line that holds a URL may run past.
+  line-length FILE     No line of the message in FILE runs past {LINE_LENGTH_LIMIT} characters,
+                       apart from a line that holds a URL.
   references [--exclude GLOB]...
                        No file of the index names a path that the commit renames or deletes.
                        CHANGELOG.md may keep the old names; GLOB leaves out more files.
@@ -121,7 +121,7 @@ Exit codes:
   30  CC_ERR_REFERENCES: a file names a path that the commit renames or deletes
   40  CC_ERR_TEMPORARY: the commit adds a temporary file
   50  CC_ERR_GIT: git failed, such as outside a repository
-  60  CC_ERR_LINE_LENGTH: a line of the message is longer than 72 characters
+  60  CC_ERR_LINE_LENGTH: a line of the message is longer than {LINE_LENGTH_LIMIT} characters
 """
 
 # endregion Constants
@@ -167,6 +167,7 @@ def run_git(arguments: Sequence[str], stdin: bytes = b"", accepted: int = 0) -> 
     executable = shutil.which("git")
     if executable is None:
         message = "git is not on PATH"
+
         raise GitError(message)
 
     try:
@@ -180,11 +181,13 @@ def run_git(arguments: Sequence[str], stdin: bytes = b"", accepted: int = 0) -> 
         )
     except subprocess.TimeoutExpired as error:
         message = f"git {arguments[0]} took longer than {GIT_TIMEOUT_SECONDS} seconds"
+
         raise GitError(message) from error
 
     if completed.returncode not in {0, accepted}:
         words = completed.stderr.decode("utf-8", errors="replace").strip()
         message = words or f"git {arguments[0]} ended with {completed.returncode}"
+
         raise GitError(message)
 
     return completed.stdout
@@ -204,6 +207,7 @@ def git_fields(arguments: Sequence[str]) -> list[str]:
         The fields, without the empty one after the last NUL.
     """
     output = run_git(arguments).decode("utf-8", errors="surrogateescape")
+
     return [field for field in output.split("\0") if field]
 
 
@@ -348,7 +352,7 @@ def trailer_share(paragraph: Sequence[str]) -> tuple[int, int]:
         The lines that look like trailers, and all lines but the continuations.
     """
     heads = [line for line in paragraph if not is_continuation(line)]
-    trailers = [line for line in heads if TRAILER_LINE.match(line)]
+    trailers = [line for line in heads if TRAILER_LINE_PATTERN.match(line)]
 
     return len(trailers), len(heads)
 
@@ -393,7 +397,7 @@ def unparsed_lines(paragraph: Sequence[str], keys: Sequence[str]) -> list[str]:
     for line in paragraph:
         if is_continuation(line):
             continue
-        if TRAILER_LINE.match(line) and remaining and remaining[0] == trailer_key(line):
+        if TRAILER_LINE_PATTERN.match(line) and remaining and remaining[0] == trailer_key(line):
             remaining.pop(0)
         else:
             lines.append(line)
@@ -415,24 +419,25 @@ def check_trailers(message: Path) -> list[str]:
         One finding per line.
     """
     lines = kept_lines(message.read_text(encoding="utf-8", errors="replace"))
-    blocks = paragraphs(lines)
-    # The subject alone carries no trailer.
-    if len(blocks) < 2:  # ruff: ignore[magic-value-comparison]
+    # The first paragraph is the subject, which carries no trailer.
+    body = paragraphs(lines)[1:]
+    if not body:
         return []
 
     findings: list[str] = []
     # A paragraph of trailers before the last one is lost: git reads the last paragraph alone.
-    for block in blocks[1:-1]:
+    for block in body[:-1]:
         trailers, heads = trailer_share(block)
         if trailers and trailers == heads:
             findings.append(f"a blank line parts this trailer from the last paragraph: {block[0]}")
 
-    # Prose may hold a line such as "Note: x"; a paragraph of trailers is mostly trailers.
-    trailers, heads = trailer_share(blocks[-1])
-    if trailers and 2 * trailers >= heads:
+    # Prose may hold a line such as "Note: x",
+    # but a paragraph of trailers holds at least as many trailers as other lines.
+    trailers, heads = trailer_share(body[-1])
+    if trailers and trailers >= heads - trailers:
         findings.extend(
             f"git takes this line for no trailer: {line}"
-            for line in unparsed_lines(blocks[-1], parsed_keys(lines))
+            for line in unparsed_lines(body[-1], parsed_keys(lines))
         )
 
     return findings
@@ -462,7 +467,7 @@ def check_line_length(message: Path) -> list[str]:
     return [
         f"line {number} has {len(line)} characters: {line}"
         for number, line in message_lines(text)
-        if len(line) > LINE_LENGTH_LIMIT and not URL.search(line)
+        if len(line) > LINE_LENGTH_LIMIT and not URL_PATTERN.search(line)
     ]
 
 
@@ -529,7 +534,7 @@ def ere_pattern(name: str) -> str:
         An extended regular expression for ``git grep -E``.
     """
     # Python 3.11 and older take no backslash inside the braces of an f-string.
-    escaped = ERE_SPECIAL.sub(r"\\\1", name)
+    escaped = ERE_SPECIAL_PATTERN.sub(r"\\\1", name)
 
     return f"{NAME_BEFORE}{escaped}{NAME_AFTER}"
 
@@ -718,6 +723,7 @@ def command_trailers(arguments: Sequence[str]) -> int:
     """
     if len(arguments) != 1:
         message = "trailers takes one file: the message of the commit"
+
         raise UsageError(message)
 
     findings = check_trailers(Path(arguments[0]))
@@ -753,6 +759,7 @@ def command_line_length(arguments: Sequence[str]) -> int:
     """
     if len(arguments) != 1:
         message = "line-length takes one file: the message of the commit"
+
         raise UsageError(message)
 
     findings = check_line_length(Path(arguments[0]))
@@ -793,6 +800,7 @@ def parse_excludes(arguments: Sequence[str]) -> list[str]:
         if argument == "--exclude":
             if position + 1 == len(arguments):
                 message = "--exclude needs a glob, such as docs/history/*.md"
+
                 raise UsageError(message)
             excludes.append(arguments[position + 1])
             position += 2
@@ -801,6 +809,7 @@ def parse_excludes(arguments: Sequence[str]) -> list[str]:
             position += 1
         else:
             message = f"references takes no argument {argument}"
+
             raise UsageError(message)
 
     return excludes
@@ -852,6 +861,7 @@ def command_temporary(arguments: Sequence[str]) -> int:
     """
     if arguments:
         message = "temporary takes no argument"
+
         raise UsageError(message)
 
     found = check_temporary()
@@ -887,6 +897,7 @@ def command_untracked(arguments: Sequence[str]) -> int:
     """
     if arguments:
         message = "untracked takes no argument"
+
         raise UsageError(message)
 
     paths = untracked_paths()
@@ -920,24 +931,29 @@ def main(arguments: Sequence[str]) -> int:
     first = arguments[0] if arguments else ""
     if first in {"-h", "--help"}:
         sys.stdout.write(HELP)
+
         return 0
     if first == "--version":
         sys.stdout.write(f"{PROGRAM} {VERSION}\n")
+
         return 0
 
     command = commands.get(first)
     if command is None:
         problem = f"unknown command: {first}" if first else "give a command"
         report(problem, "see: commit-checks --help")
+
         return CC_ERR_USAGE
 
     try:
         return command(arguments[1:])
     except UsageError as error:
         report(str(error), "see: commit-checks --help")
+
         return CC_ERR_USAGE
     except GitError as error:
         report(f"git failed: {error}", "run commit-checks inside a git repository")
+
         return CC_ERR_GIT
 
 
