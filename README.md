@@ -102,9 +102,17 @@ Each finding is a line on stdout, and the lines on stderr say what to do.
 
 ## How it works
 
-`trailers` and `line-length` drop the comments of the message,
-the lines that start with `#`, as git does in an editor,
-and the diff of `git commit --verbose`.
+`trailers` and `line-length` drop the lines that git drops:
+the diff of `git commit --verbose`, and the comments of the message.
+A comment starts with `#`,
+or with `core.commentChar` where the git config sets it,
+and git drops the comments when the commit opens an editor,
+or when `commit.cleanup` is `strip`.
+`git commit -m` and `-F` keep them, and tell the hook so by `GIT_EDITOR=:`,
+so the checks read those lines as text.
+With `core.commentChar` set to `auto`, the hooks take `#`.
+Run by hand, as `pre-commit run --hook-stage commit-msg`,
+a message counts as one from an editor.
 `trailers` then compares the last paragraph with the trailers
 that `git interpret-trailers --parse` reads from it,
 and `line-length` counts the characters of each line,

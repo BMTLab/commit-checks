@@ -16,6 +16,8 @@ source "${BATS_TEST_DIRNAME}/../support/test-helper.bash"
 function setup() {
   sandbox_setup
   make_repository
+  # A commit with an editor is the default; a test without one sets GIT_EDITOR=: as git does.
+  unset GIT_EDITOR
   # A misspelled name, such as that of an exit code, fails the test.
   set -o nounset
 }
@@ -298,6 +300,70 @@ bats_test_function --description 'a carriage return inside a line leaves the lin
 
   # Assert
   ((status == 0))
+}
+
+@test "a long comment line counts under git commit -m or -F, which keep it" {
+  # Arrange
+  local comment message
+
+  comment="$(repeat_character 'a' 80)"
+  comment="# ${comment}"
+  message="$(write_message 'Fix the parser' '' "${comment}")"
+
+  # Act
+  run --separate-stderr env GIT_EDITOR=: "${COMMIT_CHECKS}" line-length "${message}"
+
+  # Assert
+  ((status == CC_ERR_LINE_LENGTH))
+  [[ "${output}" == "line 3 has 82 characters: ${comment}" ]]
+}
+
+@test "commit.cleanup strip drops the comment lines without an editor too" {
+  # Arrange
+  local long_text message
+
+  long_text="$(repeat_character 'a' 80)"
+  message="$(write_message 'Fix the parser' '' "# ${long_text}")"
+  git config commit.cleanup strip
+
+  # Act
+  run --separate-stderr env GIT_EDITOR=: "${COMMIT_CHECKS}" line-length "${message}"
+
+  # Assert
+  ((status == 0))
+}
+
+@test "core.commentChar names the comment lines" {
+  # Arrange
+  local long_text message
+
+  long_text="$(repeat_character 'a' 80)"
+  message="$(write_message 'Fix the parser' '' "; ${long_text}" \
+    '; ------------------------ >8 ------------------------' "+${long_text}")"
+  git config core.commentChar ';'
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
+
+  # Assert
+  ((status == 0))
+}
+
+@test "a line that starts with # is text where core.commentChar names another character" {
+  # Arrange
+  local line message
+
+  line="$(repeat_character 'a' 80)"
+  line="# ${line}"
+  message="$(write_message 'Fix the parser' '' "${line}")"
+  git config core.commentChar ';'
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" line-length "${message}"
+
+  # Assert
+  ((status == CC_ERR_LINE_LENGTH))
+  [[ "${output}" == "line 3 has 82 characters: ${line}" ]]
 }
 
 @test "comments, the status of git and the diff of --verbose stay out of the length check" {

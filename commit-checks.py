@@ -31,6 +31,7 @@ Version: 1.1.0
 from __future__ import annotations
 
 import fnmatch
+import os
 import re
 import shutil
 import subprocess  # ruff: ignore[suspicious-subprocess-import], git is the point
@@ -56,6 +57,8 @@ CC_ERR_LINE_LENGTH: Final = 60
 
 # git grep ends with 1 when nothing matches, which is no failure.
 GIT_GREP_NO_MATCH: Final = 1
+# git config ends with 1 when it finds no key, which is no failure.
+GIT_CONFIG_UNSET: Final = 1
 # A git command that takes longer than this hangs, such as on a lock.
 GIT_TIMEOUT_SECONDS: Final = 60
 
@@ -64,6 +67,10 @@ TRAILER_LINE_PATTERN: Final = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]*: \S")
 # git commit --verbose puts the diff below this line, and the message ends there.
 SCISSORS: Final = "------------------------ >8 ------------------------"
 COMMENT_CHARACTER: Final = "#"
+# The settings that decide which lines of a message git drops as comments.
+COMMENT_SETTINGS: Final = r"^(core\.commentstring|core\.commentchar|commit\.cleanup)$"
+# git sets GIT_EDITOR to this for the hooks of a commit that opens no editor, as -m and -F do.
+NO_EDITOR: Final = ":"
 # The longest line of a message, in characters:
 # git log indents each line by four spaces, and 72 of them still fit in 80 columns.
 LINE_LENGTH_LIMIT: Final = 72
@@ -216,22 +223,61 @@ def git_fields(arguments: Sequence[str]) -> list[str]:
 # region Message
 
 
-def is_comment(line: str) -> bool:
+@dataclass(frozen=True, slots=True)
+class Comments:
+    """How git marks the comments of a message, and whether it drops them."""
+
+    prefix: str
+    is_dropped: bool
+
+
+def comments_of_commit() -> Comments:
+    """Tell how git marks the comments of the commit at hand, and whether it drops them.
+
+    Returns
+    -------
+    Comments
+        The prefix of core.commentString or core.commentChar, else #,
+        and whether git drops the comment lines: always under commit.cleanup strip,
+        and under the default cleanup only when the commit opens an editor.
+    """
+    output = run_git(["config", "--get-regexp", COMMENT_SETTINGS], accepted=GIT_CONFIG_UNSET)
+    settings: dict[str, str] = {}
+    for line in output.decode("utf-8", errors="replace").split("\n"):
+        key, _, value = line.partition(" ")
+        if key:
+            settings[key] = value
+
+    prefix = settings.get("core.commentstring") or settings.get("core.commentchar") or "auto"
+    cleanup = settings.get("commit.cleanup", "default")
+    # git commit -m and -F keep the comment lines, and git tells the hooks by GIT_EDITOR.
+    is_edited = os.environ.get("GIT_EDITOR") != NO_EDITOR
+
+    # With auto, git takes a character that the message does not use, # first of all.
+    return Comments(
+        prefix=COMMENT_CHARACTER if prefix == "auto" else prefix,
+        is_dropped=cleanup == "strip" or (cleanup == "default" and is_edited),
+    )
+
+
+def is_comment(line: str, comments: Comments) -> bool:
     """Tell whether git drops a line of a message as a comment.
 
     Parameters
     ----------
     line
         One line of the message.
+    comments
+        How git marks the comments, and whether it drops them.
 
     Returns
     -------
     bool
-        True for a comment line.
+        True for a comment line that git drops.
     """
-    # In an editor, git drops every line that starts with the comment character,
+    # git drops every line that starts with the comment prefix,
     # such as the files of git status, which it writes as # and a tab.
-    return line.startswith(COMMENT_CHARACTER)
+    return comments.is_dropped and line.startswith(comments.prefix)
 
 
 def read_message(message: Path) -> str:
@@ -251,13 +297,15 @@ def read_message(message: Path) -> str:
     return message.read_bytes().decode("utf-8", errors="replace")
 
 
-def message_lines(text: str) -> list[tuple[int, str]]:
+def message_lines(text: str, comments: Comments) -> list[tuple[int, str]]:
     """Return the lines of a message that git keeps, each with its number in the file.
 
     Parameters
     ----------
     text
         The message as the hook reads it, comments and the diff of --verbose included.
+    comments
+        How git marks the comments, and whether it drops them.
 
     Returns
     -------
@@ -265,32 +313,35 @@ def message_lines(text: str) -> list[tuple[int, str]]:
         The number of each line, from 1, and the line without the spaces at its end,
         for every line above the diff that is no comment.
     """
+    scissors = f"{comments.prefix} {SCISSORS}"
     lines: list[tuple[int, str]] = []
     # git ends a line at a newline alone; splitlines would also end it
     # at a carriage return, a form feed or U+2028.
     for number, line in enumerate(text.split("\n"), start=1):
-        if line == f"{COMMENT_CHARACTER} {SCISSORS}":
+        if line == scissors:
             break
-        if not is_comment(line):
+        if not is_comment(line, comments):
             lines.append((number, line.rstrip()))
 
     return lines
 
 
-def kept_lines(text: str) -> list[str]:
+def kept_lines(text: str, comments: Comments) -> list[str]:
     """Return the lines of a message that git keeps.
 
     Parameters
     ----------
     text
         The message as the hook reads it, comments and the diff of --verbose included.
+    comments
+        How git marks the comments, and whether it drops them.
 
     Returns
     -------
     list[str]
         The lines without comments, without the diff, and without blank lines at the end.
     """
-    lines = [line for _, line in message_lines(text)]
+    lines = [line for _, line in message_lines(text, comments)]
     while lines and not lines[-1]:
         lines.pop()
 
@@ -439,7 +490,7 @@ def check_trailers(message: Path) -> list[str]:
     list[str]
         One finding per line.
     """
-    lines = kept_lines(read_message(message))
+    lines = kept_lines(read_message(message), comments_of_commit())
     # The first paragraph is the subject, which carries no trailer.
     body = paragraphs(lines)[1:]
     if not body:
@@ -483,11 +534,12 @@ def check_line_length(message: Path) -> list[str]:
         One finding per line, with its number in the file.
     """
     text = read_message(message)
+    comments = comments_of_commit()
 
     # len counts characters, so a letter of two or more bytes in UTF-8 counts once.
     return [
         f"line {number} has {len(line)} characters: {line}"
-        for number, line in message_lines(text)
+        for number, line in message_lines(text, comments)
         if len(line) > LINE_LENGTH_LIMIT and not URL_PATTERN.search(line)
     ]
 

@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning][semver].
   that Python takes for a line break, where git does not:
   a long line with a form feed in it passed `line-length`.
   Now a line ends at a newline alone, as in git.
+- The hooks `line-length` and `trailers` skipped every line
+  that starts with `#`, also in a message of `git commit -m` or `-F`,
+  where git keeps such a line: a long line there passed.
+  Now they skip a comment line only where git drops it:
+  when the commit opens an editor, or under `commit.cleanup` set to `strip`.
+- The hooks took `#` for the comment character
+  even where `core.commentChar` or `core.commentString` names another one.
+  Now they read it from the git config.
 
 ## [1.1.0] - 2026-10-25
 
