@@ -1,7 +1,7 @@
 # committed.toml
 #
 # The rules of a commit message
-# (see "Versions, changelog and git" in CLAUDE.md),
+# (see "Versions and git" in CLAUDE.md),
 # which committed (https://github.com/crate-ci/committed) checks
 # in the commit-msg hook of .pre-commit-config.yaml.
 # Every rule is spelled out, even where it is the default of committed.

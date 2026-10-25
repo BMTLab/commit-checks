@@ -4,7 +4,7 @@ commit-checks gives git hooks the checks that only a commit can make:
 the trailers of the message and the length of its lines,
 the references to the paths it moves, and the files it adds or leaves out.
 pre-commit runs it from `.pre-commit-hooks.yaml`,
-in the repositories of the user.
+in the repositories that take its hooks.
 
 ## Map
 
@@ -32,9 +32,14 @@ in the repositories of the user.
 
 ## Language and punctuation
 
-Text and comments follow `writing.md`, and the code `python.md`,
-the rules in `~/.claude/rules`.
-The README follows the standard of ScriptsLib.
+- Text, comments and messages are in simple English:
+  one idea in each sentence, common words, and the active voice.
+- A comment says why, or what the code does not show at a glance.
+- No em dash, no en dash and no curly quotes:
+  rumdl finds them in the Markdown files, and a hook finds the em dash
+  in the message of a commit.
+- The README keeps its order: Features, Install, Usage, Exit codes,
+  How it works, Development and License.
 
 ## Python
 
@@ -68,6 +73,10 @@ A new code takes the next free ten.
   and the signed tag `vX.Y.Z` sits on that commit:
   other repositories pin the hooks by that tag,
   from `github.com/BMTLab/commit-checks`.
-- One branch, `main`. Commits are signed;
-  the message follows the skill `writing-commits`.
+- One branch, `main`, and every commit is signed.
+- A commit message has a subject in the imperative mood,
+  of at most 72 characters, and a body of git trailers,
+  such as `Why:`, `Rejected:` and `Verified:`.
+  The hooks of `make hooks` check the subject, the trailers
+  and the length of each line.
 - Nothing is pushed without the word of the user.

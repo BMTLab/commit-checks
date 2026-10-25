@@ -4,6 +4,9 @@
 *.swp
 *~
 
+# Claude Code: the notes of one clone, which stay on its machine
+CLAUDE.local.md
+
 # Python
 __pycache__/
 *.py[cod]

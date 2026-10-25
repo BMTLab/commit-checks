@@ -2,8 +2,10 @@
 
 # Give the tests of commit-checks a throwaway repository and the script to run.
 #
-# The repository has a git config of its own, so the config of the user changes nothing,
-# and it declares the trailer keys of writing-commits, as the user's ~/.gitconfig does.
+# The repository has a git config of its own, so the config of the machine changes nothing.
+# It declares the trailer keys that the tests use, such as Why and Verified,
+# as the git config of a committer may: git then still reads a block of trailers
+# that holds one broken line, and drops that line alone.
 
 COMMIT_CHECKS="${BATS_TEST_DIRNAME}/../commit-checks.py"
 

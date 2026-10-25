@@ -16,7 +16,7 @@ unfixable = ["MD088"]
 cache = false
 
 [MD013]
-# Prose breaks at phrase boundaries (CLAUDE.md, "Comments"),
+# Prose breaks a line where a reader would pause,
 # with lines of at most 80 columns;
 # stern flags a longer line wherever a break would help,
 # and lets a lone URL run on; tables and code blocks may run longer.
@@ -38,6 +38,6 @@ allowed-elements = ["b", "code", "details", "summary"]
 style = "aligned"
 
 [MD088]
-# The em-dash, the en-dash and the curly quotes stay out of files (writing.md).
+# The em dash, the en dash and the curly quotes stay out of files, as CLAUDE.md says.
 normalize-dashes = true
 normalize-quotes = true
