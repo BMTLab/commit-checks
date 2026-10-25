@@ -106,6 +106,22 @@ function setup() {
   [[ "${status}" -eq 0 ]]
 }
 
+@test "the status that git writes under the message in an editor stays out of the check" {
+  # Arrange
+  local message
+  # git writes each file of the status as # and a tab, without a space.
+  message="$(write_message 'Fix the parser' '' 'Why: a reason.' 'Verified: make check.' '' \
+    '# Please enter the commit message for your changes.' '#' \
+    '# Changes to be committed:' $'#\tmodified:   main.py' '#')"
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" trailers "${message}"
+
+  # Assert
+  [[ "${status}" -eq 0 ]]
+  [[ -z "${output}" ]]
+}
+
 @test "trailers without a file ends with CC_ERR_USAGE" {
   # Act
   run --separate-stderr "${COMMIT_CHECKS}" trailers

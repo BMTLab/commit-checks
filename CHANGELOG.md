@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+### Fixed
+
+- The hook `trailers` failed on a message with trailers
+  that was written in an editor:
+  it took the files that git lists under the message, after `#` and a tab,
+  for lines of the message.
+  Now every line that starts with `#` counts as a comment,
+  as it does for git in an editor.
+
 ## [1.0.1] - 2026-10-25
 
 ### Fixed

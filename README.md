@@ -92,7 +92,8 @@ Each finding is a line on stdout, and the lines on stderr say what to do.
 
 ## How it works
 
-`trailers` drops the comments of the message
+`trailers` drops the comments of the message,
+the lines that start with `#`, as git does in an editor,
 and the diff of `git commit --verbose`,
 then compares the last paragraph with the trailers
 that `git interpret-trailers --parse` reads from it.

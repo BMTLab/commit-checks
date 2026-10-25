@@ -214,7 +214,9 @@ def is_comment(line: str) -> bool:
     bool
         True for a comment line.
     """
-    return line == COMMENT_CHARACTER or line.startswith(f"{COMMENT_CHARACTER} ")
+    # In an editor, git drops every line that starts with the comment character,
+    # such as the files of git status, which it writes as # and a tab.
+    return line.startswith(COMMENT_CHARACTER)
 
 
 def kept_lines(text: str) -> list[str]:
