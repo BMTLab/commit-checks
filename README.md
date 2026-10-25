@@ -40,7 +40,7 @@ A repository takes the hooks in its `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/BMTLab/commit-checks
-    rev: v1.0.0
+    rev: v1.1.0
     hooks:
       - id: trailers
       - id: line-length
