@@ -196,8 +196,7 @@ def run_git(arguments: Sequence[str], stdin: bytes = b"", accepted: int = 0) -> 
         raise GitError(message, NEXT_STEP_NO_GIT)
 
     try:
-        # git runs by its full path, with an argv list.
-        completed = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        completed = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true], git by its full path, with an argv list
             [executable, *arguments],
             input=stdin,
             capture_output=True,
