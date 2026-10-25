@@ -17,7 +17,8 @@ in the repositories that take its hooks.
 - `pyproject.toml`, `uv.lock`, `.python-version`: the tools of `make check`
   and of the hooks, their settings and their versions; there is no package.
 - `Makefile`: every task; `make help` lists them.
-- `.github/workflows/ci.yml`: the CI, which runs `make check` on GitHub.
+- `.github/workflows/ci.yml`: the CI, which runs `make check` on GitHub;
+  `.github/dependabot.yml` moves the pins of `uv.lock`, the hooks and the actions.
 - `.pre-commit-config.yaml`, `committed.toml`: the git hooks of `make hooks`,
   which check only what a commit adds and its message.
 

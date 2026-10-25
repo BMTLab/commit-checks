@@ -1,0 +1,9 @@
+# .github/zizmor.yml
+#
+# Settings for zizmor (https://docs.zizmor.sh/configuration/),
+# which make lint-workflows runs on the files of .github.
+
+rules:
+  # A new release comes in at once: a cooldown would hold a fix back for days.
+  dependabot-cooldown:
+    disable: true

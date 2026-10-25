@@ -1,0 +1,39 @@
+# .github/dependabot.yml
+#
+# Keeps up to date the tools of uv.lock, the hook repositories
+# of .pre-commit-config.yaml and the actions of .github/workflows.
+# The hooks and the actions are pinned to commits with the version in a comment,
+# and Dependabot moves both together, in one weekly pull request per kind.
+# A new release comes in at once, so there is no cooldown.
+# The commit messages keep the default "Bump ..." subject,
+# which meets the rules of committed.toml.
+
+version: 2
+
+updates:
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      uv:
+        patterns:
+          - '*'
+
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      pre-commit:
+        patterns:
+          - '*'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - '*'

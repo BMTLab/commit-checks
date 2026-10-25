@@ -54,10 +54,10 @@ lint-md: ## rumdl, on every Markdown file, as .rumdl.toml says
 	$(RUMDL) check .
 
 # actionlint runs ShellCheck on each run block, from PATH, which uv run fills;
-# zizmor runs its offline audits, which need no token of GitHub.
-lint-workflows: ## actionlint and zizmor, on the workflows of .github
+# zizmor runs its offline audits, which need no token of GitHub, on .github.
+lint-workflows: ## actionlint and zizmor, on the workflows and the Dependabot of .github
 	$(ACTIONLINT)
-	$(ZIZMOR) --offline .github/workflows
+	$(ZIZMOR) --offline .github
 
 format: ## Format the Python and the shell code
 	$(RUFF) format .
