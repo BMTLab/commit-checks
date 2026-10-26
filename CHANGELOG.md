@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-26
+
 ### Fixed
 
 - `commit-checks trailers` and `line-length`, and so their hooks,
@@ -78,7 +80,8 @@ and this project adheres to [Semantic Versioning][semver].
 
 [keepachangelog]: https://keepachangelog.com/en/1.1.0/
 [semver]: https://semver.org/spec/v2.0.0.html
-[Unreleased]: https://github.com/BMTLab/commit-checks/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/BMTLab/commit-checks/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/BMTLab/commit-checks/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/BMTLab/commit-checks/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/BMTLab/commit-checks/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/BMTLab/commit-checks/compare/v1.0.0...v1.0.1
