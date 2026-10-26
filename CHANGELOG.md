@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+### Fixed
+
+- `commit-checks trailers` and `line-length`, and so their hooks,
+  ended with a Python traceback and code 1
+  when the message file was missing, a folder, or closed to the user.
+  Now they end with `CC_ERR_USAGE` (10) and name the file.
+
 ## [1.1.1] - 2026-10-26
 
 ### Changed

@@ -596,6 +596,14 @@ bats_test_function --description 'line-length without a file ends with CC_ERR_US
   -- a_wrong_command_line_ends_with_usage 'line-length takes one file' line-length
 bats_test_function --description '--exclude without a glob ends with CC_ERR_USAGE' \
   -- a_wrong_command_line_ends_with_usage '--exclude needs a glob' references --exclude
+bats_test_function --description 'trailers with a message file that is missing ends with CC_ERR_USAGE' \
+  -- a_wrong_command_line_ends_with_usage 'cannot read the message file missing-message' trailers missing-message
+bats_test_function --description 'line-length with a message file that is missing ends with CC_ERR_USAGE' \
+  -- a_wrong_command_line_ends_with_usage 'cannot read the message file missing-message' line-length missing-message
+bats_test_function --description 'trailers with a folder for its message file ends with CC_ERR_USAGE' \
+  -- a_wrong_command_line_ends_with_usage 'cannot read the message file .' trailers .
+bats_test_function --description 'line-length with a folder for its message file ends with CC_ERR_USAGE' \
+  -- a_wrong_command_line_ends_with_usage 'cannot read the message file .' line-length .
 
 @test "outside a repository, a check ends with CC_ERR_GIT" {
   # Arrange

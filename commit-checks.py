@@ -128,7 +128,7 @@ Commands:
 
 Exit codes:
   0   success
-  10  CC_ERR_USAGE: a wrong command line
+  10  CC_ERR_USAGE: a wrong command line, or a message file it cannot read
   20  CC_ERR_TRAILERS: a line that looks like a trailer is none that git parses
   30  CC_ERR_REFERENCES: a file names a path that the commit renames or deletes
   40  CC_ERR_TEMPORARY: the commit adds a temporary file
@@ -311,9 +311,24 @@ def read_message(message: Path) -> str:
     -------
     str
         The text, with each carriage return where the file holds it.
+
+    Raises
+    ------
+    UsageError
+        When the file cannot be read: it is missing, a folder, or closed to this user.
     """
-    # read_text would turn a lone carriage return into a newline, which git keeps in its line.
-    return message.read_bytes().decode("utf-8", errors="replace")
+    try:
+        # read_text would turn a lone carriage return into a newline, which git keeps in its line.
+        content = message.read_bytes()
+    except OSError as error:
+        problem = (
+            f"cannot read the message file {message}: {error.strerror or error};"
+            " give the file that holds the message"
+        )
+
+        raise UsageError(problem) from error
+
+    return content.decode("utf-8", errors="replace")
 
 
 def message_lines(text: str, comments: Comments) -> list[tuple[int, str]]:
@@ -836,7 +851,7 @@ def command_trailers(arguments: Sequence[str]) -> int:
     Raises
     ------
     UsageError
-        When the command line names no file, or more than one.
+        When the command line names no file, or more than one, or a file that cannot be read.
     """
     if len(arguments) != 1:
         message = "trailers takes one file: the message of the commit"
@@ -873,7 +888,7 @@ def command_line_length(arguments: Sequence[str]) -> int:
     Raises
     ------
     UsageError
-        When the command line names no file, or more than one.
+        When the command line names no file, or more than one, or a file that cannot be read.
     """
     if len(arguments) != 1:
         message = "line-length takes one file: the message of the commit"

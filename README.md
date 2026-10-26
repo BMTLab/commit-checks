@@ -95,7 +95,7 @@ Each finding is a line on stdout, and the lines on stderr say what to do.
 | Code | Name                 | Meaning                                                  |
 | ---- | -------------------- | -------------------------------------------------------- |
 | `0`  | success              | no finding                                               |
-| `10` | `CC_ERR_USAGE`       | a wrong command line                                     |
+| `10` | `CC_ERR_USAGE`       | a wrong command line, or a message file it cannot read   |
 | `20` | `CC_ERR_TRAILERS`    | a line that looks like a trailer is none that git parses |
 | `30` | `CC_ERR_REFERENCES`  | a file names a path that the commit renames or deletes   |
 | `40` | `CC_ERR_TEMPORARY`   | the commit adds a temporary file                         |
