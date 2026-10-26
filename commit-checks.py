@@ -190,6 +190,7 @@ def run_git(arguments: Sequence[str], stdin: bytes = b"", accepted: int = 0) -> 
         When git is missing, fails or hangs.
     """
     executable = shutil.which("git")
+
     if executable is None:
         message = "git is not on PATH"
 
@@ -260,6 +261,7 @@ def comments_of_commit() -> Comments:
     """
     output = run_git(["config", "--get-regexp", COMMENT_SETTINGS], accepted=GIT_CONFIG_UNSET)
     settings: dict[str, str] = {}
+
     for line in output.decode("utf-8", errors="replace").split("\n"):
         key, _, value = line.partition(" ")
         if key:
@@ -332,6 +334,7 @@ def message_lines(text: str, comments: Comments) -> list[tuple[int, str]]:
     """
     scissors = f"{comments.prefix} {SCISSORS}"
     lines: list[tuple[int, str]] = []
+
     # git ends a line at a newline alone; splitlines would also end it
     # at a carriage return, a form feed or U+2028.
     for number, line in enumerate(text.split("\n"), start=1):
@@ -359,6 +362,7 @@ def kept_lines(text: str, comments: Comments) -> list[str]:
         The lines without comments, without the diff, and without blank lines at the end.
     """
     lines = [line for _, line in message_lines(text, comments)]
+
     while lines and not lines[-1]:
         lines.pop()
 
@@ -384,6 +388,7 @@ def paragraphs(lines: Sequence[str]) -> list[list[str]]:
         Each paragraph, with at least one line.
     """
     groups: list[list[str]] = [[]]
+
     for line in lines:
         if line.strip():
             groups[-1].append(line)
@@ -483,6 +488,7 @@ def unparsed_lines(paragraph: Sequence[str], keys: Sequence[str]) -> list[str]:
     """
     remaining = list(keys)
     lines: list[str] = []
+
     for line in paragraph:
         if is_continuation(line):
             continue
@@ -510,10 +516,12 @@ def check_trailers(message: Path) -> list[str]:
     lines = kept_lines(read_message(message), comments_of_commit())
     # The first paragraph is the subject, which carries no trailer.
     body = paragraphs(lines)[1:]
+
     if not body:
         return []
 
     findings: list[str] = []
+
     # A paragraph of trailers before the last one is lost: git reads the last paragraph alone.
     for block in body[:-1]:
         trailers, heads = trailer_share(block)
@@ -523,6 +531,7 @@ def check_trailers(message: Path) -> list[str]:
     # Prose may hold a line such as "Note: x",
     # but a paragraph of trailers holds at least as many trailers as other lines.
     trailers, heads = trailer_share(body[-1])
+
     if trailers and trailers >= heads - trailers:
         findings.extend(
             f"git takes this line for no trailer: {line}"
@@ -608,6 +617,7 @@ def staged_moves() -> list[Move]:
     fields = git_fields(["diff", "--cached", "--name-status", "-M", "-z"])
     moves: list[Move] = []
     position = 0
+
     while position < len(fields):
         status = fields[position]
         # A rename or a copy gives two paths, the other changes one.
@@ -659,6 +669,7 @@ def names_of(move: Move, indexed_names: set[str]) -> list[str]:
     """
     names = [move.old]
     name = PurePosixPath(move.old).name
+
     if name != move.old and name not in indexed_names:
         names.append(name)
 
@@ -688,6 +699,7 @@ def references_to(name: str, move: Move, excludes: Sequence[str]) -> list[str]:
 
     # With -z, each match is PATH NUL LINE NUL TEXT, and a newline ends it.
     findings: list[str] = []
+
     # splitlines would also split at a form feed or a vertical tab inside the text.
     for match in output.decode("utf-8", errors="surrogateescape").split("\n"):
         if not match:
@@ -712,6 +724,7 @@ def check_references(excludes: Sequence[str]) -> list[str]:
         One finding per line that names an old path.
     """
     moves = staged_moves()
+
     if not moves:
         return []
 
@@ -719,6 +732,7 @@ def check_references(excludes: Sequence[str]) -> list[str]:
     findings: list[str] = []
     # A line that names the old path also names its file name: it counts once per move.
     seen: set[tuple[str, str]] = set()
+
     for move in moves:
         for name in names_of(move, indexed_names):
             for finding in references_to(name, move, [*REFERENCE_EXCLUDES, *excludes]):
@@ -830,6 +844,7 @@ def command_trailers(arguments: Sequence[str]) -> int:
         raise UsageError(message)
 
     findings = check_trailers(Path(arguments[0]))
+
     if not findings:
         return 0
 
@@ -866,6 +881,7 @@ def command_line_length(arguments: Sequence[str]) -> int:
         raise UsageError(message)
 
     findings = check_line_length(Path(arguments[0]))
+
     if not findings:
         return 0
 
@@ -898,6 +914,7 @@ def parse_excludes(arguments: Sequence[str]) -> list[str]:
     """
     excludes: list[str] = []
     position = 0
+
     while position < len(arguments):
         argument = arguments[position]
         if argument == "--exclude":
@@ -932,6 +949,7 @@ def command_references(arguments: Sequence[str]) -> int:
         0, or CC_ERR_REFERENCES when a finding comes up.
     """
     findings = check_references(parse_excludes(arguments))
+
     if not findings:
         return 0
 
@@ -968,6 +986,7 @@ def command_temporary(arguments: Sequence[str]) -> int:
         raise UsageError(message)
 
     found = check_temporary()
+
     if not found:
         return 0
 
@@ -1005,6 +1024,7 @@ def command_untracked(arguments: Sequence[str]) -> int:
 
     paths = untracked_paths()
     write_lines(sys.stdout, paths[:UNTRACKED_SHOWN])
+
     if len(paths) > UNTRACKED_SHOWN:
         # stdout holds paths alone, so the count of the rest is a message.
         report(f"and {len(paths) - UNTRACKED_SHOWN} more untracked files")
@@ -1033,16 +1053,19 @@ def main(arguments: Sequence[str]) -> int:
         "untracked": command_untracked,
     }
     first = arguments[0] if arguments else ""
+
     if first in {"-h", "--help"}:
         sys.stdout.write(HELP)
 
         return 0
+
     if first == "--version":
         sys.stdout.write(f"{PROGRAM} {VERSION}\n")
 
         return 0
 
     command = commands.get(first)
+
     if command is None:
         problem = f"unknown command: {first}" if first else "give a command"
         report(problem, "see: commit-checks --help")

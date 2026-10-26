@@ -40,6 +40,7 @@ function read_exit_codes() {
   local -a names=()
 
   codes="$(sed -n 's/^\(CC_ERR_[A-Z_]*\): Final = \(.*\)$/\1 \2/p' "${COMMIT_CHECKS}")"
+
   if [[ -z "${codes}" ]]; then
     printf 'test-helper: found no exit code in %s\n' "${COMMIT_CHECKS}" >&2
 
@@ -80,6 +81,7 @@ read_exit_codes
 function sandbox_setup() {
   FAKE_HOME="${BATS_TEST_TMPDIR}/home"
   FAKE_BIN="${BATS_TEST_TMPDIR}/bin"
+
   export HOME="${FAKE_HOME}"
   # A program that reads a folder of XDG from the environment stays in the home too.
   export XDG_CONFIG_HOME="${FAKE_HOME}/.config"
@@ -90,6 +92,7 @@ function sandbox_setup() {
   export XDG_RUNTIME_DIR="${BATS_TEST_TMPDIR}/run"
   export TMPDIR="${BATS_TEST_TMPDIR}"
   export PATH="${FAKE_BIN}:${PATH}"
+
   # GIT_CONFIG_GLOBAL wins over HOME, where the environment of the user sets it.
   export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 
@@ -114,9 +117,11 @@ function make_repository() {
 
   git init -q -b main -- "${REPOSITORY}"
   cd -- "${REPOSITORY}" || return
+
   git config user.name 'Test'
   git config user.email 'test@example.com'
   git config commit.gpgSign false
+
   for key in Why Changed Renamed Breaking Rejected Verified Open See; do
     git config "trailer.${key,,}.key" "${key}"
   done

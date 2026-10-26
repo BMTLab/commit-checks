@@ -550,6 +550,7 @@ done
   local number
 
   commit_files 'README.md' 'Readme.'
+
   for number in {1..22}; do
     printf 'draft\n' >"draft-${number}.md"
   done

@@ -27,8 +27,10 @@ def commit_checks() -> ModuleType:
         When Python finds no loader for the script.
     """
     spec = importlib.util.spec_from_file_location(MODULE_NAME, SCRIPT_PATH)
+
     if spec is None or spec.loader is None:
         message = f"Python finds no loader for {SCRIPT_PATH}"
+
         raise ImportError(message)
 
     module = importlib.util.module_from_spec(spec)
