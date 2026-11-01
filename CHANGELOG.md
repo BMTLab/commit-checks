@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-11-01
+
 ### Fixed
 
 - The hook `references` read each mention of `bin/tool.sh`
@@ -89,7 +91,8 @@ and this project adheres to [Semantic Versioning][semver].
 
 [keepachangelog]: https://keepachangelog.com/en/1.1.0/
 [semver]: https://semver.org/spec/v2.0.0.html
-[Unreleased]: https://github.com/BMTLab/commit-checks/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/BMTLab/commit-checks/compare/v1.1.3...HEAD
+[1.1.3]: https://github.com/BMTLab/commit-checks/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/BMTLab/commit-checks/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/BMTLab/commit-checks/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/BMTLab/commit-checks/compare/v1.0.1...v1.1.0
