@@ -6,8 +6,20 @@
 # the rules of markdownlint keep their numbers and defaults, with these changes.
 
 [global]
-# MD060 aligns tables and MD088 finds dashes; rumdl leaves both off.
-extend-enable = ["MD060", "MD088"]
+# Every rule comes on, the opt-in ones too:
+# ALL names every rule of the rumdl that runs, so a newer rumdl brings its new rules in.
+extend-enable = ["ALL"]
+# Three rules stay off. MD063 checks the case of a heading, but it lowers
+# a proper name, such as Claude Code or English, and raises the name of a tool,
+# such as rumdl, so sentence case is held by review.
+# MD072 sorts the keys of frontmatter, where the docs of Claude Code
+# put name and description first.
+# MD085 flags a paragraph line that starts with spaces,
+# but a record of docs goes on with a line indented by two spaces.
+extend-disable = ["MD063", "MD072", "MD085"]
+# [code-block-tools] keeps its default, enabled = false: it runs a linter on each code block,
+# and the blocks of the docs are short fragments, not programs.
+
 # MD088 would put a hyphen where the dash was,
 # and a hyphen between spaces is a dash too:
 # the sentence takes a comma, a colon or a full stop instead.
@@ -24,6 +36,9 @@ style = "dash"
 [MD009]
 # A break inside a paragraph is a backslash at the end of the line:
 # two trailing spaces make one too, but nobody sees them.
+br-spaces = 0
+# strict also flags the spaces at the end of a line in a code block,
+# which no file here holds either.
 strict = true
 
 [MD013]
@@ -34,10 +49,6 @@ strict = true
 line-length = 100
 code-blocks = false
 stern = true
-
-[MD024]
-# Keep a Changelog repeats Added, Changed and Fixed under each version.
-siblings-only = true
 
 [MD033]
 # A README may fold long sections, name keys,
@@ -55,8 +66,32 @@ style = "asterisk"
 # rumdl fmt aligns them.
 style = "aligned"
 
+[MD073]
+# The list of Contents names the sections of a doc, the headings of level 2.
+max-level = 2
+
+[MD080]
+# The CHANGELOG follows Keep a Changelog,
+# which repeats ### Added and ### Changed under each release.
+levels = [1, 2]
+
+[MD082]
+# In the CHANGELOG, the heading of a release only opens its ### sections.
+allow-parent-headings = true
+
 [MD088]
-# The em dash, the en dash and the curly quotes stay out of files, as CLAUDE.md says;
-# MD088 leaves the guillemets alone, as real quotes of some languages.
+# The em dash, the en dash and the curly quotes stay out of files, as CLAUDE.md says.
+# MD088 leaves the guillemets alone, as real quotes of some languages,
+# and MD061 cannot match a sign, so review alone keeps them out.
 normalize-dashes = true
 normalize-quotes = true
+
+[MD093]
+# A literal in a heading goes into a code span, as each literal does.
+code = false
+
+[per-file-ignores]
+# Keep a Changelog keeps an empty ## [Unreleased] after each release.
+# allow-parent-headings does not pass it, since the next heading is a ## too,
+# and level = 3 of MD082 would pass an empty ## section in every file.
+"**/CHANGELOG.md" = ["MD082"]
