@@ -80,6 +80,9 @@ commit-checks untracked
 - `references [--exclude GLOB]...`: no file of the index names a path
   that the commit renames or deletes, by its path,
   or by its file name when no other file of the index has that name.
+  Where the index holds the old path with an extension, as `bin/tool.sh` for `bin/tool`,
+  the file name stays in use, as the command that an install links,
+  and the old path counts only where no dot follows it.
   `CHANGELOG.md` may name the old paths, and each `--exclude`
   leaves out more files, by a glob from the top of the repository.
 - `temporary`: the commit adds no file named like

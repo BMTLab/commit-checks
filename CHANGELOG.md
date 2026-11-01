@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+### Fixed
+
+- The hook `references` read each mention of `bin/tool.sh`
+  as a mention of `bin/tool`, after `git mv bin/tool bin/tool.sh`,
+  and each mention of `tool` as a stale one.
+  Now a file that takes an extension keeps its file name,
+  which an install may still link as a command,
+  and its old path counts only where no dot follows it.
+
 ## [1.1.2] - 2026-10-26
 
 ### Fixed

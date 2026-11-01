@@ -451,6 +451,48 @@ bats_test_function --description 'a carriage return inside a line leaves the lin
   ((status == 0))
 }
 
+@test "a file that takes an extension keeps its name, and its new path is no reference to the old one" {
+  # Arrange
+  commit_files 'bin/tool' 'Tool.' 'README.md' 'Run tool, or edit bin/tool.sh.'
+  git mv -- bin/tool bin/tool.sh
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" references
+
+  # Assert
+  ((status == 0))
+  [[ -z "${output}" ]]
+}
+
+@test "the old path of a file that took an extension still counts where no dot follows it" {
+  # Arrange
+  commit_files 'bin/tool' 'Tool.' 'README.md' 'Edit (bin/tool) first.'
+  git mv -- bin/tool bin/tool.sh
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" references
+
+  # Assert
+  ((status == CC_ERR_REFERENCES))
+  [[ "${output}" == 'README.md:1: names bin/tool, which this commit renames to bin/tool.sh' ]]
+}
+
+@test "a deleted link beside its file with an extension leaves its name to that file" {
+  # Arrange: a command bin/tool, a link to bin/tool.sh, which the commit takes away.
+  mkdir -p -- bin
+  ln -s -- tool.sh bin/tool
+  git add -- bin/tool
+  commit_files 'bin/tool.sh' 'Tool.' 'README.md' 'Run tool.'
+  git rm -q -- bin/tool
+
+  # Act
+  run --separate-stderr "${COMMIT_CHECKS}" references
+
+  # Assert
+  ((status == 0))
+  [[ -z "${output}" ]]
+}
+
 @test "CHANGELOG.md may name the old path" {
   # Arrange
   commit_files 'old.md' 'Old.' 'CHANGELOG.md' 'Renamed old.md to new.md.'

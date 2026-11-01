@@ -97,6 +97,9 @@ REFERENCE_EXCLUDES: Final = ("**/CHANGELOG.md",)
 # a slash may come before it, as in rules/old.md, and a full stop after it.
 NAME_BEFORE: Final = "(^|[^[:alnum:]_.-])"
 NAME_AFTER: Final = "([^[:alnum:]_-]|$)"
+# A path that took an extension, as bin/tool became bin/tool.sh, lives on in the new path:
+# no dot may follow the old one, or each mention of the new file would count.
+NAME_AFTER_WITHOUT_DOT: Final = "([^[:alnum:]_.-]|$)"
 # The characters that the extended regular expressions of git grep take as special.
 ERE_SPECIAL_PATTERN: Final = re.compile(r"([.\[\]()*+?{}|^$\\])")
 
@@ -648,13 +651,16 @@ def staged_moves() -> list[Move]:
     return moves
 
 
-def ere_pattern(name: str) -> str:
+def ere_pattern(name: str, *, is_dot_after: bool = True) -> str:
     """Return a pattern for git grep that finds a path or a name standing alone.
 
     Parameters
     ----------
     name
         A path, such as ``docs/old.md``, or a file name.
+    is_dot_after
+        Whether a dot may follow the name, as the full stop of a sentence;
+        a path that took an extension takes none, since the dot opens its new name.
 
     Returns
     -------
@@ -663,11 +669,37 @@ def ere_pattern(name: str) -> str:
     """
     # Python 3.11 and older take no backslash inside the braces of an f-string.
     escaped = ERE_SPECIAL_PATTERN.sub(r"\\\1", name)
+    after = NAME_AFTER if is_dot_after else NAME_AFTER_WITHOUT_DOT
 
-    return f"{NAME_BEFORE}{escaped}{NAME_AFTER}"
+    return f"{NAME_BEFORE}{escaped}{after}"
 
 
-def names_of(move: Move, indexed_names: set[str]) -> list[str]:
+def took_extension(move: Move, indexed_paths: set[str]) -> bool:
+    """Tell whether the index holds the old path of a move with an extension added.
+
+    A program renamed from ``bin/tool`` to ``bin/tool.sh`` keeps ``tool`` as its command,
+    which an install links without the extension, so a mention of ``tool`` stays true.
+
+    Parameters
+    ----------
+    move
+        The rename or the deletion.
+    indexed_paths
+        The paths that the index holds after the commit.
+
+    Returns
+    -------
+    bool
+        True when a path of the index is the old path, a dot and a name without a slash.
+    """
+    prefix = f"{move.old}."
+
+    return any(
+        path.startswith(prefix) and "/" not in path[len(prefix) :] for path in indexed_paths
+    )
+
+
+def names_of(move: Move, indexed_names: set[str], *, has_extension: bool) -> list[str]:
     """Return what a reference to the old path of a move can say.
 
     Parameters
@@ -676,22 +708,27 @@ def names_of(move: Move, indexed_names: set[str]) -> list[str]:
         The rename or the deletion.
     indexed_names
         The file names that the index still holds after the commit.
+    has_extension
+        Whether the old path took an extension, so that its file name lives on.
 
     Returns
     -------
     list[str]
-        The old path, and its file name when no file of the index still has that name.
+        The old path, and its file name when no file of the index still has that name
+        and the path took no extension.
     """
     names = [move.old]
     name = PurePosixPath(move.old).name
 
-    if name != move.old and name not in indexed_names:
+    if name != move.old and name not in indexed_names and not has_extension:
         names.append(name)
 
     return names
 
 
-def references_to(name: str, move: Move, excludes: Sequence[str]) -> list[str]:
+def references_to(
+    name: str, move: Move, excludes: Sequence[str], *, is_dot_after: bool = True
+) -> list[str]:
     """Find the lines of the index that name a path or a name.
 
     Parameters
@@ -702,6 +739,8 @@ def references_to(name: str, move: Move, excludes: Sequence[str]) -> list[str]:
         The move it belongs to, for the finding.
     excludes
         The globs of the files that may name it.
+    is_dot_after
+        Whether a dot may follow the name, as ere_pattern takes it.
 
     Returns
     -------
@@ -709,7 +748,8 @@ def references_to(name: str, move: Move, excludes: Sequence[str]) -> list[str]:
         One finding per line, as ``FILE:LINE: ...``.
     """
     pathspecs = [":(top)", *(f":(top,exclude,glob){glob}" for glob in excludes)]
-    arguments = ["grep", "--cached", "-I", "-n", "-z", "-E", "-e", ere_pattern(name)]
+    pattern = ere_pattern(name, is_dot_after=is_dot_after)
+    arguments = ["grep", "--cached", "-I", "-n", "-z", "-E", "-e", pattern]
     output = run_git([*arguments, "--", *pathspecs], accepted=GIT_GREP_NO_MATCH)
 
     # With -z, each match is PATH NUL LINE NUL TEXT, and a newline ends it.
@@ -743,14 +783,17 @@ def check_references(excludes: Sequence[str]) -> list[str]:
     if not moves:
         return []
 
-    indexed_names = {PurePosixPath(path).name for path in git_fields(["ls-files", "-z", ":/"])}
+    indexed_paths = set(git_fields(["ls-files", "-z", ":/"]))
+    indexed_names = {PurePosixPath(path).name for path in indexed_paths}
     findings: list[str] = []
     # A line that names the old path also names its file name: it counts once per move.
     seen: set[tuple[str, str]] = set()
 
     for move in moves:
-        for name in names_of(move, indexed_names):
-            for finding in references_to(name, move, [*REFERENCE_EXCLUDES, *excludes]):
+        has_extension = took_extension(move, indexed_paths)
+        for name in names_of(move, indexed_names, has_extension=has_extension):
+            globs = [*REFERENCE_EXCLUDES, *excludes]
+            for finding in references_to(name, move, globs, is_dot_after=not has_extension):
                 place = (finding.split(": ", 1)[0], move.old)
                 if place not in seen:
                     seen.add(place)
