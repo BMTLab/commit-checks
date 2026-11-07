@@ -35,7 +35,7 @@ repos:
   # Without --fixup and --wip, the defaults of the hook,
   # it refuses fixup and WIP commits too, since main takes only finished ones.
   - repo: https://github.com/crate-ci/committed
-    rev: faeed42f2e10c244533a01525f13c4d8b6ce383f # frozen: v1.1.11
+    rev: 02af07ed1d11ad69a96ab75f08c9831a4e2c00da # frozen: v1.1.12
     hooks:
       - id: committed
         args: [--commit-file]
